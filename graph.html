@@ -1,0 +1,74 @@
+<div>
+<p>Total Requests:  <span id="total_requests"></span> <br>
+Recent Requests:  <span id="recent_requests"></span> <br>
+Time of Last Dump:  <span id="last_dump"></span> <br>
+</p>
+</div>
+<div style="height: 50%;width: 90%">
+<canvas id="myChart"></canvas>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.4.0/Chart.min.js" ></script>
+<script
+src="https://code.jquery.com/jquery-3.2.1.js"
+integrity="sha256-DZAnKJ/6XZ9si04Hgrsxu/8s717jcIzLy3oi35EouyE="
+crossorigin="anonymous"></script>
+<script type="text/javascript">
+	var chart;
+	var timer= 2000;
+	$(document).ready(function(){
+		var labelArr=[];
+		for(var i=0; i < 20; i++)
+			labelArr.push((i*timer)/1000);
+		var ctx = document.getElementById('myChart').getContext('2d');
+		chart = new Chart(ctx, {
+		    // The type of chart we want to create
+		    type: 'line',
+
+		    // The data for our dataset
+		    data: {
+		    	labels: labelArr,
+		    	datasets: [{
+		    		label: "DNS Packets Sniffed",
+		    		data: []
+		    	}]
+		    },
+
+		    // Configuration options go here
+		    options: {
+		    	scales: {
+		    		yAxes: [{
+		    			ticks: {
+		    				suggestedMin: 0
+		    			}
+		    		}],
+		    	}
+		    }
+		});
+		setInterval(update,timer);
+	});
+
+
+	function update(){
+		$.ajax({
+			url: '/update',
+			method: 'get',
+			dataType: 'json',
+			success: function(resp){
+				if(resp)
+				{
+					$('#last_dump').text(resp.lastDump);
+					$('#recent_requests').text(resp.point);
+					$("#total_requests").text(resp.total);
+					if(chart.data.datasets[0].data.length>=20)
+					{
+						chart.data.datasets[0].data.shift();
+						chart.data.datasets[0].data.push(resp.point);
+					}
+					else
+						chart.data.datasets[0].data.push(resp.point)
+					chart.update();
+				}
+			}
+		});
+	}
+</script>
