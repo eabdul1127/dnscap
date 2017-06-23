@@ -1,8 +1,11 @@
+var amqp = require('amqplib/callback_api');
+var async = require('async');
+var elasticsearch = require('elasticsearch');
+
+const rabbit_master_ip = "192.168.0.26";
 const QUEUE_ASYNC = 10000;
 const SATURATED = 25000;
-var  amqpURL = 'amqp://fjomkmwp:6Sx24ST9EvAXP3Gm8_9V3flvkk8ayGsF@orangutan.rmq.cloudamqp.com/fjomkmwp';
-var elasticsearch = require('elasticsearch');
-var client = new elasticsearch.Client({
+const client = new elasticsearch.Client({
   hosts: [
     "192.168.0.205:9200", "192.168.0.206:9200", "192.168.0.208:9200",
     "192.168.0.209:9200", "192.168.0.210:9200", "192.168.0.212:9200",
@@ -15,17 +18,10 @@ var client = new elasticsearch.Client({
   ]
 });
 
-var amqp = require('amqplib/callback_api');
-var async = require('async');
-var rabbit_master_ip = "192.168.0.26";
-
-var q, rmq;
-
-function resolve_task(data, cb) {
-  //Ack message
+var resolve_task = function (data, cb) {
   if(data.m) {
-    data.ch.ack(data.m);
-    return cb();
+		data.ch.ack(data.m);
+		return cb();
   }
   var date = data.date;
   delete data.date;
@@ -42,21 +38,18 @@ function resolve_task(data, cb) {
       timestamp : date,
       extra : packet.extra
     }
-  },function(err,resp,status) {
+  }, function(err, resp, status) {
     return cb();
   });
-}
+};
 
-q = async.queue(resolve_task, QUEUE_ASYNC);
-
-amqp.connect('amqp://rabbitmqadmin:rabbitmqadmin@' + rabbit_master_ip, (err, conn) => {
-  conn.createChannel( (err, ch) => {
-    var qu = 'dnscap-q';
-    rmq = ch;
+var q = async.queue(resolve_task, QUEUE_ASYNC);
+amqp.connect('amqp://rabbitmqadmin:rabbitmqadmin@' + rabbit_master_ip, function (err, conn) {
+  conn.createChannel(function (err, ch) {
+  	var qu = 'dnscap-q';
     ch.prefetch(40);
-    ch.consume(qu, (m) => {
+    ch.consume('dnscap-q', function (m) {
       var msg = JSON.parse(m.content.toString('utf8'));
-      console.log(msg);
       q.push(msg);
       q.push({ m: m, ch: ch });
     });

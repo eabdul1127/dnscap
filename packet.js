@@ -1,105 +1,75 @@
-var DNS = require("/home/compassys/node_modules/pcap/decode/dns.js");
+const DNS = require("./nodejs_pcap/decode/dns.js"); // Local Copy of nodejs pcap modified for dns packet decoding to work properly
 
-function clean_packet (host, status, ip, extra) {
-  this.host= host;
-  this.status= status;
-  this.ip = ip;
+function clean_packet (host, status, extra) {
+  this.host = host;
+  this.status = status;
   this.extra = extra;
+  if(extra != undefined)
+  	this.ip = extra[0];
+  else
+    this.extra = [];
 }
-exports.clean_packet =clean_packet;
+exports.clean_packet = clean_packet;
 
-exports.packetToString = function(clean_packet){
-  return JSON.stringify(clean_packet);
-}
-
-exports.sanitizePacket = function (packet){
-  var packetStatus = "OK";
+exports.sanitizePacket = function (packet) {
   var packetData= packet.payload.payload.payload.data;
-  var packetLength = udpPacket.length;
-  if(packetData!=undefined)
-  {
-    var decodedPacket = new DNS().decode(packetData,0);
-    var flags = decodedPacket.header;
-    var packetSet = decodedPacket.answer.rrs;
+  var packetLength = packet.payload.payload.payload.length;
+  if(packetData != undefined) {
+  	var decodedPacket = new DNS().decode(packetData, 0);
+    var rrs = decodedPacket.answer.rrs;
     var ipSet =[];
-    var isfirstIP= true;
-    var firstIP;
+    var packetStatus;
     var properResponse = false;
-    if(decodedPacket.ancount>0)
-    {
-      for (var i=0; i<packetSet.length; i++){
-        if(packetSet[i].class==1)
-        {
-          properResponse=true;
-          break;
-        }
-      }
-
-      if(!properResponse)
-      return;
-      for(var i =0; i< packetSet.length; i++)
-      {
-        if(isfirstIP&& packetSet[i].rdata!=null){
-          isfirstIP=false;
-          firstIP= packetSet[i].rdata.toString();
-        }
-        else{
-          if(packetSet[i].rdata!=null){
-            ipSet.push(packetSet[i].rdata.toString());
-
-          }
-        }
+    if(decodedPacket.ancount > 0) {
+    	properResponse = rrs.some(function (element, index, array) {
+    		return element.type == 1;
+      });
+    }
+    if(!properResponse) {
+    	if(decodedPacket.question.rrs[0].type != 1 /* A record */)
+    		return;
+      if(decodedPacket.header.responseCode == 0)
+        console.log(decodedPacket.question.rrs[0].toString());
+	  }
+    for(var i =0; i< rrs.length; i++) {
+    	if(rrs[i].rdata != null) {
+        	ipSet.push(rrs[i].rdata.toString());
       }
     }
-    else {
-      packetStatus=responseToString(decodedPacket.header.responseCode);
-    }
-    if(decodedPacket.ancount>0)
-    {
-      var nextPacket = new clean_packet(packetSet[packetSet.length-1].name,packetStatus,firstIP,ipSet);
-    }
-    else {
-      var nextPacket = new clean_packet(decodedPacket.question.rrs[0].name,packetStatus,null,ipSet);
-    }
-    return nextPacket;
-  }
+ }
+  packetStatus=responseToString(decodedPacket.header.responseCode);
+
+  if(decodedPacket.ancount>0)
+  	var nextPacket = new clean_packet(decodedPacket.question.rrs[0].name, packetStatus, ipSet);
+  else
+  	var nextPacket = new clean_packet(decodedPacket.question.rrs[0].name, packetStatus, undefined);
+
+  return nextPacket;
 }
 
-exports.dictToString= function (Dictionary)
-{
-  var ret = JSON.stringify(Dictionary);
-  return ret;
-}
+var responseToString = function (responseCode) {
+	try {
+		return {
+			0: "OK",
+			1: "FORMAT ERR",
+			2: "SERVER ERR",
+			3: "NXDOMAIN ERR",
+			4: "UNSUPPORTED ERR",
+			5: "REFUSED ERR"
+		}[responseCode];
+	}
+	catch (err) {
+	console.log("Unable to determine response code for "+responseCode)
+	return "CODE "+responseCode;
+	}
+};
 
-function responseToString(responseCode) {
-  switch (responseCode) {
-    case 0:
-    return "OK";
-    case 1:
-    return "FORMAT ERR";
-    case 2:
-    return "SERVER ERR";
-    case 3:
-    return "NXDOMAIN ERR";
-    case 4:
-    return "UNSUPPORTED ERR";
-    case 5:
-    return "REFUSED ERR";
-    default:
-    return "OK";
-  }
-}
-
-function addToDictionary (Dictionary, nextPacket, value)
-{
+function addToDictionary (Dictionary, nextPacket, value) {
   value = parseInt(value);
   var key = JSON.stringify(nextPacket);
   if(Dictionary[key]==undefined)
-  {
     Dictionary[key]= 1;
-  }
-  else
-  {
+  else {
     var count = Dictionary[key];
     count+=value;
     Dictionary[key]=count;

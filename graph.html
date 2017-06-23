@@ -1,7 +1,6 @@
 <div>
 <p>Total Requests:  <span id="total_requests"></span> <br>
 Recent Requests:  <span id="recent_requests"></span> <br>
-Time of Last Dump:  <span id="last_dump"></span> <br>
 </p>
 </div>
 <div style="height: 50%;width: 90%">
@@ -56,9 +55,8 @@ crossorigin="anonymous"></script>
 			success: function(resp){
 				if(resp)
 				{
-					$('#last_dump').text(resp.lastDump);
-					$('#recent_requests').text(resp.point);
-					$("#total_requests").text(resp.total);
+					$('#recent_requests').text(resp.recent_requests);
+					$("#total_requests").text(resp.total_requests);
 					if(chart.data.datasets[0].data.length>=20)
 					{
 						chart.data.datasets[0].data.shift();
