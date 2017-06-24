@@ -20,27 +20,9 @@ const client = new elasticsearch.Client({
 
 var resolve_task = function (data, cb) {
   if(data.m) {
-		data.ch.ack(data.m);
-		return cb();
+  	data.ch.ack(data.m);
+  	return cb();
   }
-  var date = data.date;
-  delete data.date;
-  var pre_packet = (Object.keys(data));
-  var packet = JSON.parse(pre_packet);
-  client.index({
-    index: 'dnscap',
-    type: 'udp_requests',
-    body: {
-      hostname: packet.host,
-      ip_address: packet.ip,
-      status: packet.status,
-      total:data[pre_packet],
-      timestamp : date,
-      extra : packet.extra
-    }
-  }, function(err, resp, status) {
-    return cb();
-  });
 };
 
 var q = async.queue(resolve_task, QUEUE_ASYNC);
@@ -50,8 +32,32 @@ amqp.connect('amqp://rabbitmqadmin:rabbitmqadmin@' + rabbit_master_ip, function 
     ch.prefetch(40);
     ch.consume('dnscap-q', function (m) {
       var msg = JSON.parse(m.content.toString('utf8'));
-      q.push(msg);
-      q.push({ m: m, ch: ch });
+      var bulk = msg.map(function (x) {
+      	var date = x.date;
+      	delete x.date;
+      	var packet = JSON.parse(Object.keys(x))
+      	return {
+      		hostname: packet.host,
+      		ip_address: packet.ip,
+      		status: packet.status,
+      		total: x[Object.keys(x)],
+      		timestamp: date,
+      		extra: packet.extra
+      	};
+      });
+      var bulkArr = [];
+      for(var i = 0; i < bulk.length; i++) {
+      	bulkArr.push({index: {_index: 'dnscap', _type: 'udp_requests'}});
+      	bulkArr.push(bulk[i]);
+      }
+	  client.bulk({
+	  	body: bulkArr
+	  }, function (err, resp, status) {
+	    console.log(resp);
+	    ch.ack(m);
+	  });
+      //q.push(bulkArr);
+      //q.push({ m: m, ch: ch });
     });
   }, {
     noAck: false
