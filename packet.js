@@ -11,7 +11,6 @@ function clean_packet(host, status, extra) {
 }
 exports.clean_packet = clean_packet;
 
-exports.sanitizePacket = function(packet) {
   var packetData = packet.payload.payload.payload.data;
   var packetLength = packet.payload.payload.payload.length;
   if(packetData != undefined) {
@@ -21,7 +20,7 @@ exports.sanitizePacket = function(packet) {
     var packetStatus;
     var properResponse = false;
     if(decodedPacket.ancount > 0) {
-      properResponse = rrs.some(function(element, index, array) {
+      properResponse = rrs.some(function (element, index, array) {
         return element.type == 1;
       });
     }
@@ -47,7 +46,7 @@ exports.sanitizePacket = function(packet) {
   return nextPacket;
 }
 
-var responseToString = function(responseCode) {
+var responseToString = function (responseCode) {
   try {
     return {
       0: "OK",
