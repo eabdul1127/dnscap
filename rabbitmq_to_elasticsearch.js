@@ -23,12 +23,17 @@ var resolve_task = function (data, cb) {
   	data.ch.ack(data.m);
   	return cb();
   }
+  client.bulk({
+  	body: data.array
+  }, function (err, resp, status) {
+    console.log(resp);
+    return cb();
+  });
 };
 
 var q = async.queue(resolve_task, QUEUE_ASYNC);
 amqp.connect('amqp://rabbitmqadmin:rabbitmqadmin@' + rabbit_master_ip, function (err, conn) {
   conn.createChannel(function (err, ch) {
-  	var qu = 'dnscap-q';
     ch.prefetch(40);
     ch.consume('dnscap-q', function (m) {
       var msg = JSON.parse(m.content.toString('utf8'));
@@ -46,18 +51,14 @@ amqp.connect('amqp://rabbitmqadmin:rabbitmqadmin@' + rabbit_master_ip, function 
       	};
       });
       var bulkArr = [];
+      var bulkObj = {};
       for(var i = 0; i < bulk.length; i++) {
       	bulkArr.push({index: {_index: 'dnscap', _type: 'udp_requests'}});
       	bulkArr.push(bulk[i]);
       }
-	  client.bulk({
-	  	body: bulkArr
-	  }, function (err, resp, status) {
-	    console.log(resp);
-	    ch.ack(m);
-	  });
-      //q.push(bulkArr);
-      //q.push({ m: m, ch: ch });
+      bulkObj.array = bulkArr;
+      q.push(bulkObj);
+      q.push({ m: m, ch: ch });
     });
   }, {
     noAck: false
