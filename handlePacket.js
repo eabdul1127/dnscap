@@ -29,7 +29,7 @@ app.get('/update', function (req, res) {
 });
 
 app.listen(3000, 'localhost', function() {
-  console.log('Listening on port 3000!')
+  console.log('Listening on port 3000!');
 });
 
 amqp.connect("amqp://rabbitmqadmin:rabbitmqadmin@" + rabbit_master_ip, function(err, conn) {
