@@ -1,6 +1,6 @@
 const DNS = require("./nodejs_pcap/decode/dns.js"); // Local Copy of nodejs pcap modified for dns packet decoding to work properly
 
-function clean_packet (host, status, extra) {
+var clean_packet = function (host, status, extra) {
   this.host = host;
   this.status = status;
   this.extra = extra;
@@ -11,7 +11,7 @@ function clean_packet (host, status, extra) {
 }
 exports.clean_packet = clean_packet;
 
-function addToDictionary (Dictionary, nextPacket, value) {
+var addToDictionary = function (Dictionary, nextPacket, value) {
   value = parseInt(value);
   var key = JSON.stringify(nextPacket);
   if(Dictionary[key] == undefined)
