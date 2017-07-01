@@ -1,6 +1,6 @@
 const DNS = require("./nodejs_pcap/decode/dns.js"); // Local Copy of nodejs pcap modified for dns packet decoding to work properly
 
-function clean_packet(host, status, extra) {
+function clean_packet (host, status, extra) {
   this.host = host;
   this.status = status;
   this.extra = extra;
@@ -11,6 +11,37 @@ function clean_packet(host, status, extra) {
 }
 exports.clean_packet = clean_packet;
 
+function addToDictionary (Dictionary, nextPacket, value) {
+  value = parseInt(value);
+  var key = JSON.stringify(nextPacket);
+  if(Dictionary[key] == undefined)
+    Dictionary[key] = 1;
+  else {
+    var count = Dictionary[key];
+    count += value;
+    Dictionary[key] = count;
+  }
+}
+
+exports.addToDictionary = addToDictionary
+
+var responseToString = function (responseCode) {
+  try {
+    return {
+      0: "OK",
+      1: "FORMAT ERR",
+      2: "SERVER ERR",
+      3: "NXDOMAIN ERR",
+      4: "UNSUPPORTED ERR",
+      5: "REFUSED ERR"
+    }[responseCode];
+  } catch(err) {
+    console.log("Unable to determine response code for " + responseCode)
+    return "CODE " + responseCode;
+  }
+};
+
+exports.sanitizePacket = function (packet) {
   var packetData = packet.payload.payload.payload.data;
   var packetLength = packet.payload.payload.payload.length;
   if(packetData != undefined) {
@@ -45,33 +76,3 @@ exports.clean_packet = clean_packet;
 
   return nextPacket;
 }
-
-var responseToString = function (responseCode) {
-  try {
-    return {
-      0: "OK",
-      1: "FORMAT ERR",
-      2: "SERVER ERR",
-      3: "NXDOMAIN ERR",
-      4: "UNSUPPORTED ERR",
-      5: "REFUSED ERR"
-    }[responseCode];
-  } catch(err) {
-    console.log("Unable to determine response code for " + responseCode)
-    return "CODE " + responseCode;
-  }
-};
-
-function addToDictionary(Dictionary, nextPacket, value) {
-  value = parseInt(value);
-  var key = JSON.stringify(nextPacket);
-  if(Dictionary[key] == undefined)
-    Dictionary[key] = 1;
-  else {
-    var count = Dictionary[key];
-    count += value;
-    Dictionary[key] = count;
-  }
-}
-
-exports.addToDictionary = addToDictionary
