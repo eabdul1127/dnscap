@@ -8,7 +8,7 @@ var clean_packet = function (host, status, extra) {
     this.ip = extra[0];
   else
     this.extra = [];
-}
+};
 exports.clean_packet = clean_packet;
 
 var addToDictionary = function (Dictionary, nextPacket, value) {
@@ -21,8 +21,8 @@ var addToDictionary = function (Dictionary, nextPacket, value) {
     count += value;
     Dictionary[key] = count;
   }
-}
-exports.addToDictionary = addToDictionary
+};
+exports.addToDictionary = addToDictionary;
 
 var responseToString = function (responseCode) {
   try {
@@ -74,4 +74,4 @@ exports.sanitizePacket = function (packet) {
     var nextPacket = new clean_packet(decodedPacket.question.rrs[0].name, packetStatus, undefined);
 
   return nextPacket;
-}
+};
