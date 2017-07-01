@@ -22,7 +22,6 @@ function addToDictionary (Dictionary, nextPacket, value) {
     Dictionary[key] = count;
   }
 }
-
 exports.addToDictionary = addToDictionary
 
 var responseToString = function (responseCode) {
