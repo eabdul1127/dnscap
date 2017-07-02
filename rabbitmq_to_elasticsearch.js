@@ -1,6 +1,5 @@
 var amqp = require('amqplib/callback_api');
 var async = require('async');
-var elasticsearch = require('elasticsearch');
 var config = require('./config.js');
 
 var resolve_task = function (data, cb) {
