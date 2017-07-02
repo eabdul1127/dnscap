@@ -4,12 +4,7 @@ var express = require('express');
 var packets = require('./packet.js');
 var pcap1 = require("pcap");
 var async = require('async');
-
-const app = express();
-const intervalTimer = 2000;
-const rabbit_master_ip = "130.245.169.67";
-const initTime = new Date().getTime();
-const CARGO_ASYNC = 20000;
+var config = require('./config.js');
 
 var stats = {
   totalRequests: 0,
@@ -18,6 +13,7 @@ var stats = {
 var packetSet = {};
 var currentInterval = 0;
 var connectionChannel;
+var app = config.app;
 
 app.get('/', function (req, res) {
   res.sendFile(path.join(__dirname + '/graph.html'));
@@ -32,7 +28,7 @@ app.listen(3000, 'localhost', function() {
   console.log('Listening on port 3000!');
 });
 
-amqp.connect("amqp://rabbitmqadmin:rabbitmqadmin@" + rabbit_master_ip, function(err, conn) {
+amqp.connect("amqp://rabbitmqadmin:rabbitmqadmin@" + config.rabbit_master_ip, function(err, conn) {
   conn.createChannel(function (err, ch) {
     connectionChannel = ch;
   });
@@ -41,17 +37,17 @@ amqp.connect("amqp://rabbitmqadmin:rabbitmqadmin@" + rabbit_master_ip, function(
 var cargo = async.cargo(function (data, cb) {
   connectionChannel.sendToQueue('dnscap-q', new Buffer(JSON.stringify(data)));
   return cb();
-}, CARGO_ASYNC);
+}, config.CARGO_ASYNC);
 
 
 var pcap_session1 = pcap1.createSession("eno2", "ip proto 17 and src port 53");
 pcap_session1.on('packet', function (raw_packet) {
-  var interval = Math.trunc((new Date().getTime() - initTime) / intervalTimer);
+  var interval = Math.trunc((new Date().getTime() - config.initTime) / config.intervalTimer);
   if(currentInterval != interval) {
     currentInterval = interval;
     var setRef = packetSet;
     packetSet = {};
-    var timeStamp = initTime + (interval * intervalTimer);
+    var timeStamp = config.initTime + (interval * config.intervalTimer);
     Object.keys(setRef).forEach(function (packet) {
       var msg = {
         date: timeStamp
