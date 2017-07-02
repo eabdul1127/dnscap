@@ -24,11 +24,11 @@ app.get('/update', function (req, res) {
   res.json(stats);
 });
 
-app.listen(3000, 'localhost', function() {
+app.listen(3000, 'localhost', function () {
   console.log('Listening on port 3000!');
 });
 
-amqp.connect("amqp://rabbitmqadmin:rabbitmqadmin@" + config.rabbit_master_ip, function(err, conn) {
+amqp.connect("amqp://rabbitmqadmin:rabbitmqadmin@" + config.rabbit_master_ip, function (err, conn) {
   conn.createChannel(function (err, ch) {
     connectionChannel = ch;
   });
