@@ -2,7 +2,7 @@ var path = require('path');
 var amqp = require('amqplib/callback_api');
 var express = require('express');
 var packets = require('./packet.js');
-var pcap1 = require("pcap");
+var pcap = require("pcap");
 var async = require('async');
 var config = require('./config.js');
 
@@ -39,9 +39,7 @@ var cargo = async.cargo(function (data, cb) {
   return cb();
 }, config.CARGO_ASYNC);
 
-
-var pcap_session1 = pcap1.createSession("eno2", "ip proto 17 and src port 53");
-pcap_session1.on('packet', function (raw_packet) {
+var handlePacket = function (raw_packet) {
   var interval = Math.trunc((new Date().getTime() - config.initTime) / config.intervalTimer);
   if(currentInterval != interval) {
     currentInterval = interval;
@@ -57,10 +55,16 @@ pcap_session1.on('packet', function (raw_packet) {
     });
   }
 
-  var packet = pcap1.decode.packet(raw_packet);
+  var packet = pcap.decode.packet(raw_packet);
   var nextPacket = packets.sanitizePacket(packet);
   if(nextPacket == undefined)
     return;
   packets.addToDictionary(packetSet, nextPacket, 1);
   stats.totalRequests++;
-});
+}
+
+var pcap_session = [];
+for(var i = 1; i < 4; i++) {
+  pcap_session[i-1] = pcap.createSession("eno" + i, "ip proto 17 and src port 53");
+  pcap_session[i-1].on('packet', handlePacket);
+}
