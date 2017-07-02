@@ -4,11 +4,11 @@ var config = require('./config.js');
 
 var resolve_task = function (data, cb) {
   if(data.m) {
-  	data.ch.ack(data.m);
-  	return cb();
+    data.ch.ack(data.m);
+    return cb();
   }
   config.client.bulk({
-  	body: data.array
+    body: data.array
   }, function (err, resp, status) {
     console.log(resp);
     return cb();
