@@ -1,4 +1,5 @@
 var elasticsearch = require('elasticsearch');
+exports.elasticsearch = elasticsearch;
 
 const rabbit_master_ip = "130.245.169.67";
 exports.rabbit_master_ip = rabbit_master_ip;
