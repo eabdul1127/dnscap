@@ -1,4 +1,4 @@
-const DNS = require("./nodejs_pcap/decode/dns.js"); // Local Copy of nodejs pcap modified for dns packet decoding to work properly
+const DNS = require("./pcap/decode/dns.js"); // Local Copy of nodejs pcap modified for dns packet decoding to work properly
 
 var clean_packet = function (host, status, extra) {
   this.host = host;
