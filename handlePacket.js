@@ -13,7 +13,7 @@ var stats = {
 var packetSet = {};
 var currentInterval = 0;
 var connectionChannel;
-var app = config.app;
+var app = express();
 
 app.get('/', function (req, res) {
   res.sendFile(path.join(__dirname + '/graph.html'));
