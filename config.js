@@ -1,7 +1,9 @@
 var elasticsearch = require('elasticsearch');
 const rabbit_master_ip = "130.245.169.67";
 exports.rabbit_master_ip = rabbit_master_ip;
-//const rabbit_master_ip = "192.168.0.26";
+
+const rabbit_master_ip_local = "192.168.0.26";
+exports.rabbit_master_ip_local = rabbit_master_ip_local;
 
 const QUEUE_ASYNC = 10000;
 exports.QUEUE_ASYNC = QUEUE_ASYNC;

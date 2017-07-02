@@ -16,7 +16,7 @@ var resolve_task = function (data, cb) {
 };
 
 var q = async.queue(resolve_task, config.QUEUE_ASYNC);
-amqp.connect('amqp://rabbitmqadmin:rabbitmqadmin@' + config.rabbit_master_ip, function (err, conn) {
+amqp.connect('amqp://rabbitmqadmin:rabbitmqadmin@' + config.rabbit_master_ip_local, function (err, conn) {
   conn.createChannel(function (err, ch) {
     ch.prefetch(40);
     ch.consume('dnscap-q', function (m) {
