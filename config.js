@@ -4,7 +4,6 @@ const QUEUE_ASYNC = 10000;
 const SATURATED = 25000;
 const intervalTimer = 2000;
 const CARGO_ASYNC = 20000;
-const app = express();
 const initTime = new Date().getTime();
 
 const client = new elasticsearch.Client({
