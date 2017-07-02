@@ -1,11 +1,20 @@
 var elasticsearch = require('elasticsearch');
 const rabbit_master_ip = "130.245.169.67";
+exports.rabbit_master_ip = rabbit_master_ip;
 //const rabbit_master_ip = "192.168.0.26";
+
 const QUEUE_ASYNC = 10000;
-const SATURATED = 25000;
+exports.QUEUE_ASYNC = QUEUE_ASYNC;
+
 const intervalTimer = 2000;
+exports.intervalTimer = intervalTimer;
+
 const CARGO_ASYNC = 20000;
+exports.CARGO_ASYNC = CARGO_ASYNC;
+
 const initTime = new Date().getTime();
+exports.initTime = initTime;
+
 const client = new elasticsearch.Client({
   hosts: [
     "192.168.0.205:9200", "192.168.0.206:9200", "192.168.0.208:9200",
@@ -18,4 +27,5 @@ const client = new elasticsearch.Client({
     "192.168.0.229:9200"
   ]
 });
+exports.client = client;
 
