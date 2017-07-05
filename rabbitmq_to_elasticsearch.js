@@ -21,7 +21,7 @@ var resolve_task = function (data, cb) {
     data.ch.ack(data.m);
     return cb();
   }
-  config.client.bulk({
+  client.bulk({
     body: data.array
   }, function (err, resp, status) {
     console.log(resp);

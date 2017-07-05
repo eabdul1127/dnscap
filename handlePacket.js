@@ -49,7 +49,11 @@ var sanitizePacket = function (packet) {
   var question_rrs;
   var answer_rrs;
   if(packetData != undefined) {
-    var decodedPacket = new DNS().decode(packetData, 0);
+    try {
+      var decodedPacket = new DNS().decode(packetData, 0);
+    } catch (e) {
+      console.log(packetData);
+    }
     var ipSet = [];
     var packetStatus;
     var properResponse = false;
