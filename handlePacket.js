@@ -46,13 +46,15 @@ var responseToString = function (responseCode) {
 
 var sanitizePacket = function (packet) {
   var packetData = packet.payload.payload.payload.data;
-  var answer_rrs = decodedPacket.answer.rrs;
-  var question_rrs = decodedPacket.question.rrs;
+  var question_rrs;
+  var answer_rrs;
   if(packetData != undefined) {
     var decodedPacket = new DNS().decode(packetData, 0);
     var ipSet = [];
     var packetStatus;
     var properResponse = false;
+    question_rrs = decodedPacket.question.rrs;
+    answer_rrs = decodedPacket.answer.rrs;
     if(decodedPacket.ancount > 0) {
       properResponse = answer_rrs.some(function (element, index, array) {
         return element.type == 1;
