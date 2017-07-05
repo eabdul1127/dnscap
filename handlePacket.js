@@ -1,10 +1,78 @@
 var path = require('path');
+var DNS = require("./pcap/decode/dns.js"); // Local Copy of nodejs pcap modified for dns packet decoding to work properly
 var amqp = require('amqplib/callback_api');
 var express = require('express');
 var packets = require('./packet.js');
 var pcap = require("pcap");
 var async = require('async');
 var config = require('./config.js');
+
+var clean_packet = function (host, status, extra) {
+  this.host = host;
+  this.status = status;
+  this.extra = extra;
+  if(extra != undefined)
+    this.ip = extra[0];
+  else
+    this.extra = [];
+};
+
+var addToDictionary = function (Dictionary, nextPacket, value) {
+  value = parseInt(value);
+  var key = JSON.stringify(nextPacket);
+  if(Dictionary[key] == undefined)
+    Dictionary[key] = 1;
+  else {
+    var count = Dictionary[key];
+    count += value;
+    Dictionary[key] = count;
+  }
+};
+
+var responseToString = function (responseCode) {
+  try {
+    return {
+      0: "OK",
+      1: "FORMAT ERR",
+      2: "SERVER ERR",
+      3: "NXDOMAIN ERR",
+      4: "UNSUPPORTED ERR",
+      5: "REFUSED ERR"
+    }[responseCode];
+  } catch(err) {
+    console.log("Unable to determine response code for " + responseCode)
+    return "CODE " + responseCode;
+  }
+};
+
+var sanitizePacket = function (packet) {
+  var packetData = packet.payload.payload.payload.data;
+  var answer_rrs = decodedPacket.answer.rrs;
+  var question_rrs = decodedPacket.question.rrs;
+  if(packetData != undefined) {
+    var decodedPacket = new DNS().decode(packetData, 0);
+    var ipSet = [];
+    var packetStatus;
+    var properResponse = false;
+    if(decodedPacket.ancount > 0) {
+      properResponse = answer_rrs.some(function (element, index, array) {
+        return element.type == 1;
+      });
+    }
+    if(!properResponse) {
+      if(question_rrs.type != 1 /* A record */ )
+        return;
+    }
+    for(var i = 0; i < rrs.length; i++) {
+      if(answer_rrs[i].rdata != null) {
+        ipSet.push(answer_rrs[i].rdata.toString());
+      }
+    }
+  }
+  packetStatus = responseToString(decodedPacket.header.responseCode);
+  var sanitizedPacket = new clean_packet(decodedPacket.question.rrs[0].name, packetStatus, ipSet);
+  return sanitizedPacket;
+};
 
 var stats = {
   totalRequests: 0,
@@ -40,31 +108,29 @@ var cargo = async.cargo(function (data, cb) {
 }, config.CARGO_ASYNC);
 
 var handlePacket = function (raw_packet) {
-  var interval = Math.trunc((new Date().getTime() - config.initTime) / config.intervalTimer);
+  var interval = Math.trunc(new Date().getTime() / config.intervalTimer) * config.intervalTimer;
   if(currentInterval != interval) {
     currentInterval = interval;
     var setRef = packetSet;
     packetSet = {};
-    var timeStamp = config.initTime + (interval * config.intervalTimer);
     Object.keys(setRef).forEach(function (packet) {
-      var msg = {
-        date: timeStamp
-      };
+      var msg = {};
+      msg['date'] = interval;
       msg[packet] = setRef[packet];
       cargo.push(msg);
     });
   }
 
   var packet = pcap.decode.packet(raw_packet);
-  var nextPacket = packets.sanitizePacket(packet);
-  if(nextPacket == undefined)
-    return;
-  packets.addToDictionary(packetSet, nextPacket, 1);
+  var sanitizedPacket = packets.sanitizePacket(packet);
+  if(sanitizedPacket == undefined)
+    return;   //Syslog
+  packets.addToDictionary(packetSet, sanitizedPacket, 1);
   stats.totalRequests++;
 }
 
 var pcap_session = [];
-for(var i = 1; i < 4; i++) {
-  pcap_session[i-1] = pcap.createSession("eno" + i, "ip proto 17 and src port 53");
-  pcap_session[i-1].on('packet', handlePacket);
+for(var i = 0; i < config.interfaces.length; i++) {
+  pcap_session[i] = pcap.createSession(config.interfaces[i], "ip proto 17 and src port 53");
+  pcap_session[i].on('packet', handlePacket);
 }
