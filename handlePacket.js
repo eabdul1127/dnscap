@@ -64,7 +64,7 @@ var sanitizePacket = function (packet) {
       if(question_rrs.type != 1 /* A record */ )
         return;
     }
-    for(var i = 0; i < rrs.length; i++) {
+    for(var i = 0; i < answer_rrs.length; i++) {
       if(answer_rrs[i].rdata != null) {
         ipSet.push(answer_rrs[i].rdata.toString());
       }
