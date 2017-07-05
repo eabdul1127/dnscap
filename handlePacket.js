@@ -2,7 +2,6 @@ var path = require('path');
 var DNS = require("./pcap/decode/dns.js"); // Local Copy of nodejs pcap modified for dns packet decoding to work properly
 var amqp = require('amqplib/callback_api');
 var express = require('express');
-var packets = require('./packet.js');
 var pcap = require("pcap");
 var async = require('async');
 var config = require('./config.js');
@@ -122,10 +121,10 @@ var handlePacket = function (raw_packet) {
   }
 
   var packet = pcap.decode.packet(raw_packet);
-  var sanitizedPacket = packets.sanitizePacket(packet);
+  var sanitizedPacket = sanitizePacket(packet);
   if(sanitizedPacket == undefined)
     return;   //Syslog
-  packets.addToDictionary(packetSet, sanitizedPacket, 1);
+  addToDictionary(packetSet, sanitizedPacket, 1);
   stats.totalRequests++;
 }
 
