@@ -1,13 +1,12 @@
 var path = require('path');
 var amqp = require('amqplib/callback_api');
 var express = require('express');
-var packets = require('./packet.js');
 var pcap = require("pcap");
 var async = require('async');
 var config = require('./config.js');
 var DNS = require("./pcap/decode/dns.js"); // Local Copy of nodejs pcap modified for dns packet decoding to work properly
 var SysLogger = require('ain2');
-var console = new SysLogger();
+//var console = new SysLogger();
 
 var clean_packet = function (host, status, extra) {
   this.host = host;
@@ -70,9 +69,9 @@ var sanitizePacket = function (packet) {
         if(decodedPacket.header.responseCode == 0)
           console.log(decodedPacket.question.rrs[0].toString());
       }
-      for(var i = 0; i < rrs.length; i++) {
-        if(rrs[i].rdata != null) {
-          ipSet.push(rrs[i].rdata.toString());
+      for(var i = 0; i < answer_rrs.length; i++) {
+        if(answer_rrs[i].rdata != null) {
+          ipSet.push(answer_rrs[i].rdata.toString());
         }
       }
     }
@@ -81,7 +80,7 @@ var sanitizePacket = function (packet) {
     return nextPacket;
   }
   catch(err) {
-    console.log(decodedPacket);
+    console.log(err);
     return undefined;
   }
 };
@@ -116,7 +115,8 @@ amqp.connect("amqp://rabbitmqadmin:rabbitmqadmin@" + config.rabbit_master_ip, fu
 
 var cargo = async.cargo(function (data, cb) {
   connectionChannel.sendToQueue('dnscap-q', new Buffer(JSON.stringify(data)));
-  return cb();
+  console.log(data);
+   return cb();
 }, config.CARGO_ASYNC);
 
 var handlePacket = function (raw_packet) {
@@ -134,13 +134,15 @@ var handlePacket = function (raw_packet) {
   }
 
   var packet = pcap.decode.packet(raw_packet);
-  var sanitizedPacket = packets.sanitizePacket(packet);
+  var sanitizedPacket = sanitizePacket(packet);
   if(sanitizedPacket == undefined)
     return;
-  packets.addToDictionary(packetSet, sanitizedPacket, 1);
+  addToDictionary(packetSet, sanitizedPacket, 1);
   stats.totalRequests++;
 }
 
+var pcap_session = pcap.createSession('eno2', 'ip proto 17 and src port 53');
+pcap_session.on('packet', handlePacket);
 /*var pcap_session = [];
 for(var i = 1; i < 4; i++) {
   pcap_session[i-1] = pcap.createSession("eno" + i, "ip proto 17 and src port 53");
