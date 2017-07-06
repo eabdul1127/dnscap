@@ -6,7 +6,7 @@ var async = require('async');
 var config = require('./config.js');
 var DNS = require("./pcap/decode/dns.js"); // Local Copy of nodejs pcap modified for dns packet decoding to work properly
 var SysLogger = require('ain2');
-//var console = new SysLogger();
+var logger = new SysLogger();
 
 var clean_packet = function (host, status, extra) {
   this.host = host;
@@ -41,7 +41,7 @@ var responseToString = function (responseCode) {
       5: "REFUSED ERR"
     }[responseCode];
   } catch(err) {
-    console.log("Unable to determine response code for " + responseCode)
+    logger.log("Unable to determine response code for " + responseCode)
     return "CODE " + responseCode;
   }
 };
@@ -80,7 +80,7 @@ var sanitizePacket = function (packet) {
     return nextPacket;
   }
   catch(err) {
-    console.log(err);
+    logger.err(err);
     return undefined;
   }
 };
@@ -115,7 +115,6 @@ amqp.connect("amqp://rabbitmqadmin:rabbitmqadmin@" + config.rabbit_master_ip, fu
 
 var cargo = async.cargo(function (data, cb) {
   connectionChannel.sendToQueue('dnscap-q', new Buffer(JSON.stringify(data)));
-  console.log(data);
    return cb();
 }, config.CARGO_ASYNC);
 
@@ -132,13 +131,19 @@ var handlePacket = function (raw_packet) {
       cargo.push(msg);
     });
   }
-
-  var packet = pcap.decode.packet(raw_packet);
-  var sanitizedPacket = sanitizePacket(packet);
-  if(sanitizedPacket == undefined)
+  try {
+    var packet = pcap.decode.packet(raw_packet);
+    var sanitizedPacket = sanitizePacket(packet);
+    if(sanitizedPacket == undefined)
     return;
-  addToDictionary(packetSet, sanitizedPacket, 1);
-  stats.totalRequests++;
+    addToDictionary(packetSet, sanitizedPacket, 1);
+    stats.totalRequests++;
+  } catch (e) {
+    logger.err("Error Occurred : " + e);
+    logger.err(packet);
+    if(sanitizedPacket != undefined)
+      logger.err(sanitizedPacket);
+  }
 }
 
 var pcap_session = pcap.createSession('eno2', 'ip proto 17 and src port 53');
