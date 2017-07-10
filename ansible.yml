@@ -1,0 +1,24 @@
+---
+- hosts: localhost
+  remote_user: ubuntu
+  become: yes
+  become_method: sudo
+  tasks:
+  - name: install nodejs
+    apt:
+      update_cache: yes
+      name: nodejs-legacy
+  - name: install npm
+    apt:
+      update_cache: yes
+      name: npm
+  - name: install libpcap-dev
+    apt:
+      update_cache: yes
+      name: "{{ item }}"
+    with_items:
+      - libpcap-dev
+      - git
+  - git:
+      repo: 'https://github.com/eabdul1127/dnscap.git'
+      dest: /home/ubuntu/dnscap
