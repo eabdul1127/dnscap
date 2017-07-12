@@ -28,9 +28,9 @@
       update_cache: yes
       name: apache2-utils
   - htpasswd:
-      path: /etc/nginx/passwdfile
-      name: Hello
-      password: World
+      path: /etc/nginx/.htpasswd
+      name: Compassys
+      password: DNS
   - file: path=/etc/nginx/sites-available/default state=absent
   - copy:
       src: /home/ubuntu/dnscap/default
