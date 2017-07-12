@@ -19,6 +19,13 @@
     with_items:
       - libpcap-dev
       - git
+  - name: install nginx service
+    apt:
+      update_cache: yes
+      name: nginx
+  - copy:
+      src: /home/ubuntu/dnscap/default
+      dest: /etc/nginx/sites-available/default
   - git:
       repo: 'https://github.com/eabdul1127/dnscap.git'
       dest: /home/ubuntu/dnscap
