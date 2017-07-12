@@ -23,6 +23,17 @@
     apt:
       update_cache: yes
       name: nginx
+  - name: install apache utils for htpasswd authentication for nginx
+    apt:
+      update_cache: yes
+      name: apache2-utils
+  - htpasswd:
+      path: /etc/nginx/passwdfile
+      name: Hello
+      password: World
+  - service:
+      name: nginx
+      state: restarted
   - copy:
       src: /home/ubuntu/dnscap/default
       dest: /etc/nginx/sites-available/default
