@@ -31,12 +31,13 @@
       path: /etc/nginx/passwdfile
       name: Hello
       password: World
-  - service:
-      name: nginx
-      state: restarted
+  - file: path=/etc/nginx/sites-available/default state=absent
   - copy:
       src: /home/ubuntu/dnscap/default
       dest: /etc/nginx/sites-available/default
+  - service:
+      name: nginx
+      state: restarted
   - git:
       repo: 'https://github.com/eabdul1127/dnscap.git'
       dest: /home/ubuntu/dnscap
