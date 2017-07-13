@@ -7,10 +7,13 @@ var config = require('./config.js');
 var DNS = require("./pcap/decode/dns.js"); // Local Copy of nodejs pcap modified for dns packet decoding to work properly
 var SysLogger = require('ain2');
 var logger = new SysLogger();
+var Cryptr = require('cryptr'),
+    cryptr = new Cryptr('myTotalySecretKey','aes-128-ctr');
 
-var clean_packet = function (host, status, extra) {
+var clean_packet = function (host, status, encryptedIP, extra) {
   this.host = host;
   this.status = status;
+  this.encryptedIP = encryptedIP;
   this.extra = extra;
   if(extra != undefined)
     this.ip = extra[0];
@@ -46,7 +49,7 @@ var responseToString = function (responseCode) {
   }
 };
 
-var sanitizePacket = function (packet) {
+var sanitizePacket = function (packet, encryptedIP) {
   var packetData = packet.payload.payload.payload.data;
   var answer_rrs;
   var question_rrs;
@@ -76,7 +79,7 @@ var sanitizePacket = function (packet) {
       }
     }
     packetStatus = responseToString(decodedPacket.header.responseCode);
-    var nextPacket = new clean_packet(decodedPacket.question.rrs[0].name, packetStatus, ipSet);
+    var nextPacket = new clean_packet(decodedPacket.question.rrs[0].name, packetStatus, ipSet, encryptedIP);
     return nextPacket;
   }
   catch(err) {
@@ -133,7 +136,11 @@ var handlePacket = function (raw_packet) {
   }
   try {
     var packet = pcap.decode.packet(raw_packet);
-    var sanitizedPacket = sanitizePacket(packet);
+    var encryptedIP = cryptr.encrypt(packet.payload.payload.daddr);
+    var decryptedIP = cryptr.decrypt(encryptedIP);
+    console.log(encryptedIP);
+    console.log(decryptedIP);
+    var sanitizedPacket = sanitizePacket(packet, encryptedIP);
     if(sanitizedPacket == undefined)
     return;
     addToDictionary(packetSet, sanitizedPacket, 1);
