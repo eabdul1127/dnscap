@@ -80,7 +80,7 @@ var sanitizePacket = function (packet) {
     return nextPacket;
   }
   catch(err) {
-    logger.err(err);
+    logger.error(err);
     return undefined;
   }
 };
@@ -139,10 +139,10 @@ var handlePacket = function (raw_packet) {
     addToDictionary(packetSet, sanitizedPacket, 1);
     stats.totalRequests++;
   } catch (e) {
-    logger.err("Error Occurred : " + e);
-    logger.err(packet);
+    logger.error("Error Occurred : " + e);
+    logger.error(packet);
     if(sanitizedPacket != undefined)
-      logger.err(sanitizedPacket);
+      logger.error(sanitizedPacket);
   }
 }
 
