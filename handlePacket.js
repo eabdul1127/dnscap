@@ -8,7 +8,7 @@ var DNS = require("./pcap/decode/dns.js"); // Local Copy of nodejs pcap modified
 var SysLogger = require('ain2');
 var logger = new SysLogger();
 var Cryptr = require('cryptr'),
-    cryptr = new Cryptr('myTotalySecretKey','aes-128-ctr');
+    cryptr = new Cryptr('dnscap','aes-128-ctr');
 
 var clean_packet = function (host, status, encrypted_ip, extra) {
   this.host = host;
