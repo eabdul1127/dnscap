@@ -57,8 +57,8 @@
         if (resp) {
           $('#recent_requests').text(resp.recentRequests);
           $("#total_requests").text(resp.totalRequests);
-          $('cpu_usage').text((resp.cpuUsage * 100)+ '%');
-          $('free_mem').text(resp.freeMemory);
+          $('#cpu_usage').text((resp.cpuUsage * 100)+ '%');
+          $('#free_mem').text(resp.freeMemory);
           if (chart.data.datasets[0].data.length >= 20) {
             chart.data.datasets[0].data.shift();
             chart.data.datasets[0].data.push(resp.recentRequests);

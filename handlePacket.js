@@ -154,7 +154,7 @@ var handlePacket = function (raw_packet) {
     return;
     addToDictionary(packetSet, sanitizedPacket, 1);
     stats.totalRequests++;
-    stats.cpuUsage = os.loadavg()[0];
+    stats.cpuUsage = (os.loadavg()[0]) / os.cpus().length;
     stats.freeMemory = os.freemem();
   } catch (e) {
     logger.error("Error Occurred : " + e);
