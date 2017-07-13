@@ -45,7 +45,8 @@ amqp.connect('amqp://rabbitmqadmin:rabbitmqadmin@' + config.rabbit_master_ip_loc
       		status: packet.status,
       		total: x[Object.keys(x)],
       		timestamp: date,
-      		extra: packet.extra
+      		extra: packet.extra,
+          src_ip_encrypted: packet.encrypted_ip
       	};
       });
       var bulkArr = [];

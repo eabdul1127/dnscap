@@ -10,10 +10,10 @@ var logger = new SysLogger();
 var Cryptr = require('cryptr'),
     cryptr = new Cryptr('myTotalySecretKey','aes-128-ctr');
 
-var clean_packet = function (host, status, encryptedIP, extra) {
+var clean_packet = function (host, status, encrypted_ip, extra) {
   this.host = host;
   this.status = status;
-  this.encryptedIP = encryptedIP;
+  this.encrypted_ip = encrypted_ip;
   this.extra = extra;
   if(extra != undefined)
     this.ip = extra[0];
@@ -49,7 +49,7 @@ var responseToString = function (responseCode) {
   }
 };
 
-var sanitizePacket = function (packet, encryptedIP) {
+var sanitizePacket = function (packet, encrypted_ip) {
   var packetData = packet.payload.payload.payload.data;
   var answer_rrs;
   var question_rrs;
@@ -79,7 +79,7 @@ var sanitizePacket = function (packet, encryptedIP) {
       }
     }
     packetStatus = responseToString(decodedPacket.header.responseCode);
-    var nextPacket = new clean_packet(decodedPacket.question.rrs[0].name, packetStatus, ipSet, encryptedIP);
+    var nextPacket = new clean_packet(decodedPacket.question.rrs[0].name, packetStatus, ipSet, encrypted_ip);
     return nextPacket;
   }
   catch(err) {
@@ -136,11 +136,8 @@ var handlePacket = function (raw_packet) {
   }
   try {
     var packet = pcap.decode.packet(raw_packet);
-    var encryptedIP = cryptr.encrypt(packet.payload.payload.daddr);
-    var decryptedIP = cryptr.decrypt(encryptedIP);
-    console.log(encryptedIP);
-    console.log(decryptedIP);
-    var sanitizedPacket = sanitizePacket(packet, encryptedIP);
+    var encrypted_ip = cryptr.encrypt(packet.payload.payload.daddr);
+    var sanitizedPacket = sanitizePacket(packet, encrypted_ip);
     if(sanitizedPacket == undefined)
     return;
     addToDictionary(packetSet, sanitizedPacket, 1);
