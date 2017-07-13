@@ -6,9 +6,12 @@ var async = require('async');
 var config = require('./config.js');
 var DNS = require("./pcap/decode/dns.js"); // Local Copy of nodejs pcap modified for dns packet decoding to work properly
 var SysLogger = require('ain2');
-var logger = new SysLogger();
 var Cryptr = require('cryptr'),
-    cryptr = new Cryptr('myTotalySecretKey','aes-128-ctr');
+    cryptr = new Cryptr(config.encryption_string,'aes-128-ctr');
+var os = require('os');
+var logger = new SysLogger();
+var ip_cache = {};
+
 
 var clean_packet = function (host, status, encrypted_ip, extra) {
   this.host = host;
@@ -91,6 +94,8 @@ var sanitizePacket = function (packet, encrypted_ip) {
 var stats = {
   totalRequests: 0,
   recentRequests: 0,
+  cpuUsage: 0,
+  freeMemory: 0
 };
 var packetSet = {};
 var currentInterval = 0;
@@ -124,6 +129,7 @@ var cargo = async.cargo(function (data, cb) {
 var handlePacket = function (raw_packet) {
   var interval = Math.trunc(new Date().getTime() / config.intervalTimer) * config.intervalTimer;
   if(currentInterval != interval) {
+    ip_cache = {};
     currentInterval = interval;
     var setRef = packetSet;
     packetSet = {};
@@ -136,12 +142,20 @@ var handlePacket = function (raw_packet) {
   }
   try {
     var packet = pcap.decode.packet(raw_packet);
-    var encrypted_ip = cryptr.encrypt(packet.payload.payload.daddr);
+    var encrypted_ip;
+    if(ip_cache[packet.payload.payload.daddr] == undefined) {
+      encrypted_ip = cryptr.encrypt(packet.payload.payload.daddr + packet.payload.payload.dhost + config.encryption_string);
+      ip_cache[packet.payload.payload.daddr] = encrypted_ip;
+    }
+    else
+      encrypted_ip = ip_cache[packet.payload.payload.daddr];
     var sanitizedPacket = sanitizePacket(packet, encrypted_ip);
     if(sanitizedPacket == undefined)
     return;
     addToDictionary(packetSet, sanitizedPacket, 1);
     stats.totalRequests++;
+    stats.cpuUsage = os.loadavg()[0];
+    stats.freeMemory = os.freemem();
   } catch (e) {
     logger.error("Error Occurred : " + e);
     logger.error(packet);
