@@ -5,6 +5,7 @@ const intervalTimer = 2000;
 const CARGO_ASYNC = 100;
 const interfaces = ['eno1', 'eno2', 'eno3'];
 const encryption_string = 'dnscap';
+const encrypt = true;
 
 module.exports = {
     QUEUE_ASYNC : QUEUE_ASYNC,
@@ -13,5 +14,6 @@ module.exports = {
     rabbit_master_ip_local : rabbit_master_ip_local,
     intervalTimer : intervalTimer,
     interfaces : interfaces,
-    encryption_string : encryption_string
+    encryption_string : encryption_string,
+    encrypt : encrypt
 };

@@ -52,7 +52,7 @@ var responseToString = function (responseCode) {
   }
 };
 
-var sanitizePacket = function (packet, encrypted_ip) {
+var sanitizePacket = function (packet) {
   var packetData = packet.payload.payload.payload.data;
   var answer_rrs;
   var question_rrs;
@@ -82,7 +82,7 @@ var sanitizePacket = function (packet, encrypted_ip) {
       }
     }
     packetStatus = responseToString(decodedPacket.header.responseCode);
-    var nextPacket = new clean_packet(decodedPacket.question.rrs[0].name, packetStatus, ipSet, encrypted_ip);
+    var nextPacket = new clean_packet(decodedPacket.question.rrs[0].name, packetStatus, ipSet);
     return nextPacket;
   }
   catch(err) {
@@ -143,13 +143,16 @@ var handlePacket = function (raw_packet) {
   try {
     var packet = pcap.decode.packet(raw_packet);
     var encrypted_ip;
-    if(ip_cache[packet.payload.payload.daddr] == undefined) {
-      encrypted_ip = cryptr.encrypt(packet.payload.payload.daddr + packet.payload.payload.dhost + config.encryption_string);
-      ip_cache[packet.payload.payload.daddr] = encrypted_ip;
+    var sanitizedPacket = sanitizePacket(packet);
+    if(config.encrypt) {
+      if(ip_cache[packet.payload.payload.daddr] == undefined) {
+        encrypted_ip = cryptr.encrypt(packet.payload.payload.daddr + packet.payload.payload.dhost + config.encryption_string);
+        ip_cache[packet.payload.payload.daddr] = encrypted_ip;
+      }
+      else
+        encrypted_ip = ip_cache[packet.payload.payload.daddr];
+      sanitizedPacket['encrypted_ip'] = encrypted_ip;
     }
-    else
-      encrypted_ip = ip_cache[packet.payload.payload.daddr];
-    var sanitizedPacket = sanitizePacket(packet, encrypted_ip);
     if(sanitizedPacket == undefined)
     return;
     addToDictionary(packetSet, sanitizedPacket, 1);
