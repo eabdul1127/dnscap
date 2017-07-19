@@ -10,30 +10,22 @@ var Cryptr = require('cryptr'),
     cryptr = new Cryptr(config.encryption_string,'aes-128-ctr');
 var os = require('os');
 var logger = new SysLogger();
-var ip_cache = {};
+var memcached = require('memcached');
 
-
-var clean_packet = function (host, status, encrypted_ip, extra) {
+var clean_packet = function (host, status, hashed_src, ips) {
   this.host = host;
   this.status = status;
-  this.encrypted_ip = encrypted_ip;
-  this.extra = extra;
-  if(extra != undefined)
-    this.ip = extra[0];
-  else
-    this.extra = [];
+  if(hashed_src != undefined)
+    this.hashed_src = hashed_src;
+  this.ips = ips;
+  if(ips.length != 0)
+    this.ip = ips[0];
 };
 
 var addToDictionary = function (Dictionary, nextPacket, value) {
   value = parseInt(value);
   var key = JSON.stringify(nextPacket);
-  if(Dictionary[key] == undefined)
-    Dictionary[key] = 1;
-  else {
-    var count = Dictionary[key];
-    count += value;
-    Dictionary[key] = count;
-  }
+  Dictionary[key] = (Dictionary[key]+value) || value;
 };
 
 var responseToString = function (responseCode) {
@@ -56,12 +48,12 @@ var sanitizePacket = function (packet) {
   var packetData = packet.payload.payload.payload.data;
   var answer_rrs;
   var question_rrs;
+  var ipSet = [];
   try {
     if(packetData != undefined) {
       var decodedPacket = new DNS().decode(packetData, 0);
       answer_rrs = decodedPacket.answer.rrs;
       question_rrs = decodedPacket.question.rrs;
-      var ipSet = [];
       var packetStatus;
       var properResponse = false;
       if(decodedPacket.ancount > 0) {
@@ -82,10 +74,24 @@ var sanitizePacket = function (packet) {
       }
     }
     packetStatus = responseToString(decodedPacket.header.responseCode);
-    var nextPacket = new clean_packet(decodedPacket.question.rrs[0].name, packetStatus, ipSet);
-    return nextPacket;
-  }
-  catch(err) {
+    var hashed_src = undefined;
+    if(config.encrypt) { // should move inside sanitizePacket
+      memcached.get(packet.payload.payload.daddr, function (err, data) {
+        if(data != undefined)
+          hashed_src = data;
+        else {
+          hashed_src = cryptr.encrypt(packet.payload.payload.daddr + packet.payload.payload.dhost + config.encryption_string);
+          memcached.set(packet.payload.payload.daddr, hashed_src, function (err) {
+            logger.error(err);
+          });
+        }
+        return new clean_packet(decodedPacket.question.rrs[0].name, packetStatus, hashed_src, ipSet);
+      });
+    }
+    else {
+      return new clean_packet(decodedPacket.question.rrs[0].name, packetStatus, hashed_src, ipSet);
+    }
+  } catch(err) {
     logger.error(err);
     return undefined;
   }
@@ -129,7 +135,6 @@ var cargo = async.cargo(function (data, cb) {
 var handlePacket = function (raw_packet) {
   var interval = Math.trunc(new Date().getTime() / config.intervalTimer) * config.intervalTimer;
   if(currentInterval != interval) {
-    ip_cache = {};
     currentInterval = interval;
     var setRef = packetSet;
     packetSet = {};
@@ -142,28 +147,20 @@ var handlePacket = function (raw_packet) {
   }
   try {
     var packet = pcap.decode.packet(raw_packet);
-    var encrypted_ip;
+    var hashed_src;
     var sanitizedPacket = sanitizePacket(packet);
-    if(config.encrypt) {
-      if(ip_cache[packet.payload.payload.daddr] == undefined) {
-        encrypted_ip = cryptr.encrypt(packet.payload.payload.daddr + packet.payload.payload.dhost + config.encryption_string);
-        ip_cache[packet.payload.payload.daddr] = encrypted_ip;
-      }
-      else
-        encrypted_ip = ip_cache[packet.payload.payload.daddr];
-      sanitizedPacket['encrypted_ip'] = encrypted_ip;
-    }
     if(sanitizedPacket == undefined)
-    return;
+      return;
     addToDictionary(packetSet, sanitizedPacket, 1);
     stats.totalRequests++;
     stats.cpuUsage = (os.loadavg()[0]) / os.cpus().length;
     stats.freeMemory = os.freemem();
   } catch (e) {
-    logger.error("Error Occurred : " + e);
-    logger.error(packet);
+    // count errors
+    var errString = "Error Occurred : " + e + " Packet: " + packet;
     if(sanitizedPacket != undefined)
-      logger.error(sanitizedPacket);
+      errString += sanitizedPacket;
+    logger.err(errString);
   }
 }
 
