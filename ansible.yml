@@ -12,6 +12,10 @@
     apt:
       update_cache: yes
       name: npm
+  - name: install python-passlib
+    apt:
+      update_cache: yes
+      name: python-passlib
   - name: install libpcap-dev
     apt:
       update_cache: yes
