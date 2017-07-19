@@ -81,8 +81,6 @@ if (cluster.isMaster) {
         if(!properResponse) {
           if(question_rrs[0].type != 1 /* A record */ )
             return;
-          if(decodedPacket.header.responseCode == 0)
-            console.log(decodedPacket.question.rrs[0].toString());
         }
         for(var i = 0; i < answer_rrs.length; i++) {
           if(answer_rrs[i].rdata != null) {
@@ -106,7 +104,6 @@ if (cluster.isMaster) {
         var sanitizedPacket = new clean_packet(decodedPacket.question.rrs[0].name, packetStatus, hashed_src, ipSet);
         addToDictionary(packetSet, sanitizedPacket, 1);
       }
-
     } catch(err) {
       errCount++;
       logger.error(err);
