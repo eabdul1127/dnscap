@@ -21,13 +21,21 @@ app.get('/', function (req, res) {
 });
 
 app.get('/update', function (req, res) {
-  stats.recentRequests = Object.keys(packetSet).length;
+  stats.cpuUsage = (os.loadavg()[0]) / os.cpus().length;
+  stats.freeMemory = os.freemem();
   res.json(stats);
 });
 
 app.listen(3000, 'localhost', function () {
   console.log('Listening on port 3000!');
 });
+
+var interpretMessage = function (msg) {
+  stats.recentRequests = Object.keys(msg).length;
+  stats.totalRequests += stats.recentRequests;
+  delete msg.recentRequests;
+  cargo.push(msg);
+}
 
 var cargo = async.cargo(function (data, cb) {
   connectionChannel.sendToQueue('dnscap-q', new Buffer(data));
@@ -39,7 +47,7 @@ amqp.connect('amqp://rabbitmqadmin:rabbitmqadmin@' + config.rabbit_master_ip, fu
     ch.prefetch(40);
     ch.consume('dnscap2-q', function (m) {
       var msg = m.content.toString('utf8');
-      cargo.push(msg);
+      interpretMessage(JSON.parse(msg));
       ch.ack(m);
     });
   }, {

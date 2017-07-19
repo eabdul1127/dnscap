@@ -75,7 +75,7 @@ var sanitizePacket = function (packet) {
     }
     packetStatus = responseToString(decodedPacket.header.responseCode);
     var hashed_src = undefined;
-    if(config.encrypt) { // should move inside sanitizePacket
+    if(config.encrypt) {
       memcached.get(packet.payload.payload.daddr, function (err, data) {
         if(data != undefined)
           hashed_src = data;
@@ -85,11 +85,9 @@ var sanitizePacket = function (packet) {
             logger.error(err);
           });
         }
-        return new clean_packet(decodedPacket.question.rrs[0].name, packetStatus, hashed_src, ipSet);
       });
-    }
-    else {
-      return new clean_packet(decodedPacket.question.rrs[0].name, packetStatus, hashed_src, ipSet);
+      var sanitizedPacket = new clean_packet(decodedPacket.question.rrs[0].name, packetStatus, hashed_src, ipSet);
+      addToDictionary(packetSet, sanitizedPacket, 1);urn new clean_packet(decodedPacket.question.rrs[0].name, packetStatus, hashed_src, ipSet);
     }
   } catch(err) {
     logger.error(err);
@@ -151,7 +149,8 @@ var handlePacket = function (raw_packet) {
     var sanitizedPacket = sanitizePacket(packet);
     if(sanitizedPacket == undefined)
       return;
-    addToDictionary(packetSet, sanitizedPacket, 1);
+    if(!config.encrypt)
+      addToDictionary(packetSet, sanitizedPacket, 1);
     stats.totalRequests++;
     stats.cpuUsage = (os.loadavg()[0]) / os.cpus().length;
     stats.freeMemory = os.freemem();
