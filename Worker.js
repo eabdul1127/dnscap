@@ -1,24 +1,26 @@
 var cluster = require('cluster');
 var http = require('http');
+var async = require('async');
 var amqp = require('amqplib/callback_api');
 var pcap = require("pcap");
 var config = require('./config.js');
 var DNS = require("./pcap/decode/dns.js"); // Local Copy of nodejs pcap modified for dns packet decoding to work properly
 var SysLogger = require('ain2');
 var logger = new SysLogger();
-var memcached = require('memcached');
+var Cryptr = require('cryptr'),
+    cryptr = new Cryptr(config.encryption_string,'aes-128-ctr');
+var Memcached = require('memcached');
+var memcached = new Memcached("127.0.0.1:11211");
 var numCPUs = require('os').cpus().length;
 var errCount = 0;
 
 if (cluster.isMaster) {
   console.log(`Master ${process.pid} is running`);
 
-  // Fork workers.
-  for (let i = 0; i < numCPUs; i++) {
+  for (var i = 0; i < numCPUs; i++) {
     var new_worker_env = {};
     new_worker_env["interface"] = config.interfaces[i];
     var new_worker = cluster.fork(new_worker_env);
-    cluster.fork();
   }
 
   cluster.on('exit', (worker, code, signal) => {
@@ -34,6 +36,12 @@ if (cluster.isMaster) {
     this.ips = ips;
     if(ips.length != 0)
       this.ip = ips[0];
+  };
+
+  var addToDictionary = function (Dictionary, nextPacket, value) {
+    value = parseInt(value);
+    var key = JSON.stringify(nextPacket);
+    Dictionary[key] = (Dictionary[key]+value) || value;
   };
 
   var responseToString = function (responseCode) {
@@ -84,7 +92,7 @@ if (cluster.isMaster) {
       }
       packetStatus = responseToString(decodedPacket.header.responseCode);
       var hashed_src = undefined;
-      if(config.encrypt) { // should move inside sanitizePacket
+      if(config.encrypt) {
         memcached.get(packet.payload.payload.daddr, function (err, data) {
           if(data != undefined)
             hashed_src = data;
@@ -94,18 +102,25 @@ if (cluster.isMaster) {
               logger.error(err);
             });
           }
-          return new clean_packet(decodedPacket.question.rrs[0].name, packetStatus, hashed_src, ipSet);
         });
+        var sanitizedPacket = new clean_packet(decodedPacket.question.rrs[0].name, packetStatus, hashed_src, ipSet);
+        addToDictionary(packetSet, sanitizedPacket, 1);
       }
-      else {
-        return new clean_packet(decodedPacket.question.rrs[0].name, packetStatus, hashed_src, ipSet);
-      }
+
     } catch(err) {
       errCount++;
       logger.error(err);
       return undefined;
     }
   };
+  var packetSet = {};
+  var connectionChannel;
+  var currentInterval = 0;
+  amqp.connect("amqp://rabbitmqadmin:rabbitmqadmin@" + config.rabbit_master_ip, function (err, conn) {
+    conn.createChannel(function (err, ch) {
+      connectionChannel = ch;
+    });
+  });
 
   var cargo = async.cargo(function (data, cb) {
     connectionChannel.sendToQueue('dnscap2-q', new Buffer(JSON.stringify(data)));
@@ -127,19 +142,19 @@ if (cluster.isMaster) {
     }
     try {
       var packet = pcap.decode.packet(raw_packet);
-      var hashed_src;
       var sanitizedPacket = sanitizePacket(packet);
       if(sanitizedPacket == undefined)
         return;
-      addToDictionary(packetSet, sanitizedPacket, 1);
+      if(!config.encrypt)
+        addToDictionary(packetSet, sanitizedPacket, 1);
     } catch (e) {
       errCount++;
       var errString = "Error Occurred : " + e + " Packet: " + packet;
       if(sanitizedPacket != undefined)
         errString += sanitizedPacket;
-      logger.err(errString);
+      logger.error(errString);
     }
   }
-
   var pcap_session = pcap.createSession(process.env["interface"], 'ip proto 17 and src port 53');
+  pcap_session.on('packet', handlePacket);
 }

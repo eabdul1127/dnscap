@@ -3,14 +3,14 @@ var amqp = require('amqplib/callback_api');
 var express = require('express');
 var pcap = require("pcap");
 var async = require('async');
-var config = require('./config.js');
 var DNS = require("./pcap/decode/dns.js"); // Local Copy of nodejs pcap modified for dns packet decoding to work properly
 var SysLogger = require('ain2');
 var Cryptr = require('cryptr'),
     cryptr = new Cryptr(config.encryption_string,'aes-128-ctr');
 var os = require('os');
 var logger = new SysLogger();
-var memcached = require('memcached');
+var Memcached = require('memcached');
+var memcached = new Memcached("127.0.0.1:11211");
 
 var clean_packet = function (host, status, hashed_src, ips) {
   this.host = host;

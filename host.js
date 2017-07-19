@@ -1,6 +1,9 @@
+var path = require('path');
 var express = require('express');
 var os = require('os');
 var amqp = require('amqplib/callback_api');
+var async = require('async');
+var config = require('./config.js');
 
 var stats = {
   totalRequests: 0,
@@ -37,6 +40,7 @@ amqp.connect('amqp://rabbitmqadmin:rabbitmqadmin@' + config.rabbit_master_ip, fu
     ch.consume('dnscap2-q', function (m) {
       var msg = m.content.toString('utf8');
       cargo.push(msg);
+      ch.ack(m);
     });
   }, {
     noAck: false
