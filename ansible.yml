@@ -27,6 +27,9 @@
     apt:
       update_cache: yes
       name: apache2-utils
+  - git:
+      repo: 'https://github.com/eabdul1127/dnscap.git'
+      dest: /home/ubuntu/dnscap
   - htpasswd:
       path: /etc/nginx/.htpasswd
       name: Compassys
@@ -38,6 +41,3 @@
   - service:
       name: nginx
       state: restarted
-  - git:
-      repo: 'https://github.com/eabdul1127/dnscap.git'
-      dest: /home/ubuntu/dnscap
