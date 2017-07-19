@@ -15,33 +15,26 @@ var numCPUs = require('os').cpus().length;
 var errCount = 0;
 
 if (cluster.isMaster) {
-  console.log(`Master ${process.pid} is running`);
-
-  for (var i = 0; i < numCPUs; i++) {
-    var new_worker_env = {};
-    new_worker_env["interface"] = config.interfaces[i];
-    var new_worker = cluster.fork(new_worker_env);
-  }
-
+  for (var i = 0; i < 1; i++)
+    cluster.fork({interface: 'eth0'});
   cluster.on('exit', (worker, code, signal) => {
     console.log(`worker ${worker.process.pid} died`);
   });
 } else {
 
-  var clean_packet = function (host, status, hashed_src, ips) {
+  var clean_packet = function (host, status, origin, ips) {
     this.host = host;
     this.status = status;
-    if(hashed_src != undefined)
-      this.hashed_src = hashed_src;
+    this.origin = origin;
     this.ips = ips;
     if(ips.length != 0)
       this.ip = ips[0];
   };
 
-  var addToDictionary = function (Dictionary, nextPacket, value) {
+  var addToPacketCounts = function (packetCounts, nextPacket, value) {
     value = parseInt(value);
     var key = JSON.stringify(nextPacket);
-    Dictionary[key] = (Dictionary[key]+value) || value;
+    packetCounts[key] = (packetCounts[key]+value) || value;
   };
 
   var responseToString = function (responseCode) {
@@ -87,22 +80,20 @@ if (cluster.isMaster) {
             ipSet.push(answer_rrs[i].rdata.toString());
           }
         }
-      }
+ aaazaza     }
       packetStatus = responseToString(decodedPacket.header.responseCode);
       var hashed_src = undefined;
-      if(config.encrypt) {
-        memcached.get(packet.payload.payload.daddr, function (err, data) {
-          if(data != undefined)
-            hashed_src = data;
-          else {
-            hashed_src = cryptr.encrypt(packet.payload.payload.daddr + packet.payload.payload.dhost + config.encryption_string);
-            memcached.set(packet.payload.payload.daddr, hashed_src, function (err) {
-              logger.error(err);
-            });
-          }
-        });
-        var sanitizedPacket = new clean_packet(decodedPacket.question.rrs[0].name, packetStatus, hashed_src, ipSet);
-        addToDictionary(packetSet, sanitizedPacket, 1);
+      memcached.get(packet.payload.payload.daddr, function (err, data) {
+        if(data != undefined)
+          hashed_src = data;
+        else {
+          hashed_src = cryptr.encrypt(packet.payload.payload.daddr + packet.payload.payload.dhost + config.encryption_string);
+          memcached.set(packet.payload.payload.daddr, hashed_src, function (err) {
+            logger.error(err);
+          });
+        }
+        var sanitizedPacket = new clean_packet(decodedPacket.question.rrs[0].name, packetStatus, { mac: hashed_mac, ip: hashed_ip }, ipSet);
+        addToPacketCounts(packetSet, sanitizedPacket, 1);
       }
     } catch(err) {
       errCount++;
@@ -143,7 +134,7 @@ if (cluster.isMaster) {
       if(sanitizedPacket == undefined)
         return;
       if(!config.encrypt)
-        addToDictionary(packetSet, sanitizedPacket, 1);
+        addToPacketCounts(packetSet, sanitizedPacket, 1);
     } catch (e) {
       errCount++;
       var errString = "Error Occurred : " + e + " Packet: " + packet;
@@ -152,6 +143,7 @@ if (cluster.isMaster) {
       logger.error(errString);
     }
   }
+
   var pcap_session = pcap.createSession(process.env["interface"], 'ip proto 17 and src port 53');
   pcap_session.on('packet', handlePacket);
 }
