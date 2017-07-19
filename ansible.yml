@@ -4,10 +4,16 @@
   become: yes
   become_method: sudo
   tasks:
+  - name: install python-software-properties
+    apt:
+      update_cache: yes
+      name: python-software-properties
+  - name: install nodejs ppa
+    shell: curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash -
   - name: install nodejs
     apt:
       update_cache: yes
-      name: nodejs-legacy
+      name: nodejs
   - name: install npm
     apt:
       update_cache: yes
