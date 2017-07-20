@@ -1,12 +1,12 @@
-var path = require('path');
-var zmq = require('zeromq')
-  , sock = zmq.socket('pull');
-var express = require('express');
-var os = require('os');
-var amqp = require('amqplib/callback_api');
-var async = require('async');
-var config = require('./config.js');
-var SysLogger = require('ain2');
+var path = require("path");
+var zmq = require("zeromq")
+  , sock = zmq.socket("pull");
+var express = require("express");
+var os = require("os");
+var amqp = require("amqplib/callback_api");
+var async = require("async");
+var config = require("./config.js");
+var SysLogger = require("ain2");
 var logger = new SysLogger();
 
 var stats = {
@@ -21,24 +21,24 @@ var connectionChannel;
 var app = express();
 var errCount = 0;
 
-app.get('/', function (req, res) {
-  res.sendFile(path.join(__dirname + '/graph.html'));
+app.get("/", function (req, res) {
+  res.sendFile(path.join(__dirname + "/graph.html"));
 });
 
-app.get('/update', function (req, res) {
+app.get("/update", function (req, res) {
   stats.cpuUsage = (os.loadavg()[0]) / os.cpus().length;
   stats.freeMemory = os.freemem();
   res.json(stats);
   stats.recentRequests=0;
 });
 
-app.listen(3000, 'localhost', function () {
-  console.log('Listening on port 3000!');
+app.listen(3000, "localhost", function () {
+  console.log("Listening on port 3000!");
 });
 
-sock.bind('tcp://127.0.0.1:5000');
+sock.bind("tcp://127.0.0.1:5000");
 
-sock.on('message', function(message) {
+sock.on("message", function(message) {
   var interval = Math.trunc(new Date().getTime() / config.intervalTimer) * config.intervalTimer;
   if(currentInterval != interval) {
     currentInterval = interval;
@@ -46,7 +46,7 @@ sock.on('message', function(message) {
     packetSet = {};
     Object.keys(setRef).forEach(function (message) {
       var msg = {};
-      msg['date'] = interval;
+      msg["date"] = interval;
       msg[message] = setRef[message];
       cargo.push(msg);
     });
@@ -54,7 +54,6 @@ sock.on('message', function(message) {
   var finished_packet = interpretMessage(JSON.parse(message.toString()));
   if(finished_packet != undefined)
     addToPacketCounts(packetSet, finished_packet, 1);
-  console.log(finished_packet);
 });
 
 var elasticsearch_packet = function (host, status, origin, ips) {
@@ -88,7 +87,7 @@ var interpretMessage = function (msg) {
       }
       for(var i = 0; i < answer_rrs.length; i++) {
         if(answer_rrs[i].rdata != null) {
-          ips.push(answer_rrs[i].rdata.toString());
+          ips.push(answer_rrs[i].rdata.addr.join("."));
         }
       }
     packetStatus = responseToString(decodedPacket.header.responseCode);
@@ -124,9 +123,7 @@ var responseToString = function (responseCode) {
 };
 
 var cargo = async.cargo(function (data, cb) {
-  console.log("attempting to send");
-  console.log(data);
-  connectionChannel.sendToQueue('dnscap-q', new Buffer(data));
+  connectionChannel.sendToQueue("dnscap-q", new Buffer(JSON.stringify(data)));
    return cb();
 }, config.CARGO_ASYNC);
 

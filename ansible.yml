@@ -9,15 +9,15 @@
       update_cache: yes
       name: python-software-properties
   - name: install nodejs ppa
-    shell: curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash -
+    shell: curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
   - name: install nodejs
     apt:
       update_cache: yes
       name: nodejs
-  - name: install npm
+  - name: install python passlib
     apt:
       update_cache: yes
-      name: npm
+      name: python-passlib
   - name: install libpcap-dev
     apt:
       update_cache: yes
@@ -37,6 +37,9 @@
       path: /etc/nginx/.htpasswd
       name: Compassys
       password: DNS
+  - git:
+      repo: 'https://github.com/eabdul1127/dnscap.git'
+      dest: /home/ubuntu/dnscap
   - file: path=/etc/nginx/sites-available/default state=absent
   - copy:
       src: /home/ubuntu/dnscap/default
@@ -44,6 +47,3 @@
   - service:
       name: nginx
       state: restarted
-  - git:
-      repo: 'https://github.com/eabdul1127/dnscap.git'
-      dest: /home/ubuntu/dnscap

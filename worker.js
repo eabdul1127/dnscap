@@ -1,13 +1,13 @@
 var pcap = require("pcap");
-var zmq = require('zeromq')
-  , sock = zmq.socket('push');
-var config = require('./config.js');
+var zmq = require("zeromq")
+  , sock = zmq.socket("push");
+var config = require("./config.js");
 var DNS = require("./node_modules/pcap/decode/dns.js"); // Local Copy of nodejs pcap modified for dns packet decoding to work properly
-var SysLogger = require('ain2');
+var SysLogger = require("ain2");
 var logger = new SysLogger();
-var Cryptr = require('cryptr'),
-    cryptr = new Cryptr(config.encryption_string,'aes-128-ctr');
-var memoize = require('memoizee');
+var Cryptr = require("cryptr"),
+    cryptr = new Cryptr(config.encryption_string,"aes-128-ctr");
+var memoize = require("memoizee");
 var memoized = memoize(cryptr.encrypt);
 var errCount = 0;
 
@@ -31,7 +31,7 @@ var sanitizePacket = function (packet) {
   }
 };
 
-sock.connect('tcp://127.0.0.1:5000');
+sock.connect("tcp://127.0.0.1:5000");
 var handlePacket = function (raw_packet) {
   try {
     var packet = pcap.decode.packet(raw_packet);
@@ -49,5 +49,5 @@ var handlePacket = function (raw_packet) {
   }
 };
 
-var pcap_session = pcap.createSession(process.argv[2], 'ip proto 17 and src port 53');
-pcap_session.on('packet', handlePacket);
+var pcap_session = pcap.createSession(process.argv[2], "ip proto 17 and src port 53");
+pcap_session.on("packet", handlePacket);
