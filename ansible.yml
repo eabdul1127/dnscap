@@ -10,7 +10,7 @@
       name: python-software-properties
   - name: install nodejs ppa
     shell: curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
-  - name: install nodejs
+  - name: install nodejs and npm
     apt:
       update_cache: yes
       name: nodejs
