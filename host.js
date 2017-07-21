@@ -1,6 +1,7 @@
 var path = require("path");
 var zmq = require("zeromq")
   , sock = zmq.socket("pull");
+var DNS = require("./pcap/decode/dns.js"); // Local Copy of nodejs pcap modified for dns packet decoding to work properly
 var express = require("express");
 var os = require("os");
 var amqp = require("amqplib/callback_api");
@@ -51,7 +52,7 @@ sock.on("message", function(message) {
       cargo.push(msg);
     });
   }
-  var finished_packet = interpretMessage(JSON.parse(message.toString()));
+  var finished_packet = interpretMessage(message);
   if(finished_packet != undefined)
     addToPacketCounts(packetSet, finished_packet, 1);
 });
@@ -66,12 +67,14 @@ var elasticsearch_packet = function (host, status, origin, ips) {
     this.ip = ips[0];
 };
 
-var interpretMessage = function (msg) {
+var interpretMessage = function (message) {
+  var parsedMessage = JSON.parse(message.toString());
+  var buffer = new Buffer(parsedMessage.packetData);
+  var decodedPacket = new DNS().decode(buffer, 0);
   stats.recentRequests++;
   stats.totalRequests++;
   var ips = [];
   try {
-      var decodedPacket = msg.decodedPacket;
       answer_rrs = decodedPacket.answer.rrs;
       question_rrs = decodedPacket.question.rrs;
       var packetStatus;
@@ -91,7 +94,7 @@ var interpretMessage = function (msg) {
         }
       }
     packetStatus = responseToString(decodedPacket.header.responseCode);
-    return new elasticsearch_packet(decodedPacket.question.rrs[0].name, packetStatus, msg.origin,  ips);
+    return new elasticsearch_packet(decodedPacket.question.rrs[0].name, packetStatus, parsedMessage,  ips);
   } catch(err) {
     errCount++;
     logger.error(err);
