@@ -44,6 +44,10 @@
   - copy:
       src: /home/ubuntu/dnscap/default
       dest: /etc/nginx/sites-available/default
+  - copy:
+      src: /home/ubuntu/dnscap/dns.js
+      dest: /home/ubuntu/node_modules/decode/dns.js
+      force: yes
   - service:
       name: nginx
       state: restarted

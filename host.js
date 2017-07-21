@@ -1,7 +1,7 @@
 var path = require("path");
 var zmq = require("zeromq")
   , sock = zmq.socket("pull");
-var DNS = require("./pcap/decode/dns.js"); // Local Copy of nodejs pcap modified for dns packet decoding to work properly
+var DNS = require("./node_modules/pcap/decode/dns.js"); // Local Copy of nodejs pcap modified for dns packet decoding to work properly
 var express = require("express");
 var os = require("os");
 var amqp = require("amqplib/callback_api");
