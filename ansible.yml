@@ -37,9 +37,6 @@
       path: /etc/nginx/.htpasswd
       name: Compassys
       password: DNS
-  - git:
-      repo: 'https://github.com/eabdul1127/dnscap.git'
-      dest: /home/ubuntu/dnscap
   - file: path=/etc/nginx/sites-available/default state=absent
   - copy:
       src: /home/ubuntu/dnscap/default
