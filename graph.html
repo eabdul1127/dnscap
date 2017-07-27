@@ -1,6 +1,9 @@
 <div>
   <p>Total Requests: <span id="total_requests"></span>
     <br> Recent Requests: <span id="recent_requests"></span>
+    <br> CPU Usage: <span id="cpu_usage"></span>
+    <br> Free Memory: <span id="free_mem"></span>
+
     <br>
   </p>
 </div>
@@ -52,14 +55,16 @@
       dataType: 'json',
       success: function(resp) {
         if (resp) {
-          $('#recent_requests').text(resp.recent_requests);
-          $("#total_requests").text(resp.total_requests);
+          $('#recent_requests').text(resp.recentRequests);
+          $("#total_requests").text(resp.totalRequests);
+          $('#cpu_usage').text((resp.cpuUsage * 100)+ '%');
+          $('#free_mem').text(resp.freeMemory);
           if (chart.data.datasets[0].data.length >= 20) {
             chart.data.datasets[0].data.shift();
-            chart.data.datasets[0].data.push(resp.point);
+            chart.data.datasets[0].data.push(resp.recentRequests);
           }
           else
-            chart.data.datasets[0].data.push(resp.point)
+            chart.data.datasets[0].data.push(resp.recentRequests)
           chart.update();
         }
       }
