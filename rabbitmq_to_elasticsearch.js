@@ -2,6 +2,8 @@ var amqp = require("amqplib/callback_api");
 var async = require("async");
 var config = require("./config.js");
 var elasticsearch = require("elasticsearch");
+var LZUTF8 = require('lzutf8');
+
 
 var client = new elasticsearch.Client({
   hosts: [
@@ -34,7 +36,7 @@ amqp.connect("amqp://rabbitmqadmin:rabbitmqadmin@" + config.rabbit_master_ip_loc
   conn.createChannel(function (err, ch) {
     ch.prefetch(40);
     ch.consume("dnscap-q", function (m) {
-      var msg = JSON.parse(m.content.toString("utf8"));
+      var msg = JSON.parse(LZUTF8.decompress(new Uint8Array(m.content,0)));
       var bulk = msg.map(function (x) {
       	var date = x.date;
       	delete x.date;
@@ -57,8 +59,8 @@ amqp.connect("amqp://rabbitmqadmin:rabbitmqadmin@" + config.rabbit_master_ip_loc
       	bulkArr.push(bulk[i]);
       }
       bulkObj.array = bulkArr;
-      q.push(bulkObj);
-      q.push({ m: m, ch: ch });
+      //q.push(bulkObj);
+      //q.push({ m: m, ch: ch });
     });
   }, {
     noAck: false
