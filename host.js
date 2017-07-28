@@ -144,7 +144,7 @@ var enpoint = "tcp://127.0.0.1:";
 for(var i = 0; i < 3; i++)
 {
   sock[i] = zmq.socket("pull");
-  sock[i].interface_no = (i);
+  sock[i].interface_no = i;
   sock[i].bind(enpoint + process.argv[i+2]);
   sock[i].on("message", handleMessage);
 }
