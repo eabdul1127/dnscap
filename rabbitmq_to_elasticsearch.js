@@ -4,7 +4,6 @@ var config = require("./config.js");
 var elasticsearch = require("elasticsearch");
 var LZUTF8 = require('lzutf8');
 
-
 var client = new elasticsearch.Client({
   hosts: [
     "192.168.0.205:9200", "192.168.0.206:9200", "192.168.0.208:9200",
