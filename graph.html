@@ -28,8 +28,25 @@
       data: {
         labels: labelArr,
         datasets: [{
-          label: "DNS Packets Sniffed",
-          data: []
+          label: "Total DNS Packets Sniffed",
+          data: [],
+          borderColor: "#3e95cd",
+          fill: false
+        }, {
+          label: "Interface 1",
+          data: [],
+          borderColor: "#8e5ea2",
+          fill: false
+        }, {
+          label: "Interface 2",
+          data: [],
+          borderColor: "#3cba9f",
+          fill: false
+        }, {
+          label: "Interface 3",
+          data: [],
+          borderColor: "#c45850",
+          fill: false
         }]
       },
 
@@ -57,14 +74,20 @@
         if (resp) {
           $('#recent_requests').text(resp.recentRequests);
           $("#total_requests").text(resp.totalRequests);
-          $('#cpu_usage').text((resp.cpuUsage * 100)+ '%');
+          $('#cpu_usage').text((resp.cpuUsage * 100) + '%');
           $('#free_mem').text(resp.freeMemory);
           if (chart.data.datasets[0].data.length >= 20) {
             chart.data.datasets[0].data.shift();
             chart.data.datasets[0].data.push(resp.recentRequests);
-          }
-          else
+            for (var i = 0; i < 3; i++) {
+              chart.data.datasets[i + 1].data.shift();
+              chart.data.datasets[i + 1].data.push(resp.recent_interface[i]);
+            }
+          } else {
             chart.data.datasets[0].data.push(resp.recentRequests)
+            for (var i = 0; i < 3; i++)
+              chart.data.datasets[i + 1].data.push(resp.recent_interface[i]);
+          }
           chart.update();
         }
       }
