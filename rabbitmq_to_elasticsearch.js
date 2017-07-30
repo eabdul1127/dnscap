@@ -4,6 +4,7 @@ var config = require("./config.js");
 var elasticsearch = require("elasticsearch");
 var LZUTF8 = require('lzutf8');
 
+
 var client = new elasticsearch.Client({
   hosts: [
     "192.168.0.205:9200", "192.168.0.206:9200", "192.168.0.208:9200",
@@ -39,8 +40,18 @@ amqp.connect("amqp://rabbitmqadmin:rabbitmqadmin@" + config.rabbit_master_ip_loc
       var bulk = msg.map(function (x) {
       	var date = x.date;
       	delete x.date;
-      	var packet = JSON.parse(Object.keys(x));
-      	return {
+      	var packet = JSON.parse(Object.keys(x)); 
+        var name_array = packet.host.split(".");
+        for(var i = 0; i < name_array.length; i++) {
+          var partial_name = "";
+          for(var j = i; j >= 0; j--)  {
+            if(j != i)
+              partial_name += ".";
+            partial_name += name_array[name_array.length - j - 1];
+          }
+          packet["name_" + i.toString()] = partial_name;
+        }
+        var elasticsearch_object = {
           hostname: packet.host,
           ip_address: packet.ip,
           status: packet.status,
@@ -49,7 +60,12 @@ amqp.connect("amqp://rabbitmqadmin:rabbitmqadmin@" + config.rabbit_master_ip_loc
           ips: packet.ips,
           hashed_ip: packet.hashed_ip,
           hashed_mac: packet.hashed_mac
-      	};
+        };
+        for(var i = 0; i < name_array.length; i++) {
+          elasticsearch_object["name_" + i.toString()] = packet["name_" + i.toString()];
+        }
+        console.log(elasticsearch_object);
+      	return elasticsearch_object;
       });
       var bulkArr = [];
       var bulkObj = {};
@@ -58,8 +74,8 @@ amqp.connect("amqp://rabbitmqadmin:rabbitmqadmin@" + config.rabbit_master_ip_loc
       	bulkArr.push(bulk[i]);
       }
       bulkObj.array = bulkArr;
-      //q.push(bulkObj);
-      //q.push({ m: m, ch: ch });
+      q.push(bulkObj);
+      q.push({ m: m, ch: ch });
     });
   }, {
     noAck: false
