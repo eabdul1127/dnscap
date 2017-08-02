@@ -11,6 +11,7 @@ echo "$0: update dns decode"
 mv /home/mferdman/dnscap/dns.js /home/mferdman/dnscap/node_modules/pcap/decode/dns.js
 echo "update nginx.conf"
 mv /home/mferdman/dnscap/nginx.conf /home/mferdman/nginx/conf/nginx.conf
+mv /home/mferdman/dnscap/.htpasswd /home/.htpasswd
 /home/mferdman/nginx/sbin/nginx
 pm2 startup
 pm2 start /home/mferdman/dnscap/host.js --watch -- 5001 5002 5003
