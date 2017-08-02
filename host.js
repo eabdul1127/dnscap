@@ -15,7 +15,8 @@ var stats = {
   recentRequests: 0,
   cpuUsage: 0,
   freeMemory: 0,
-  recent_interface: [0,0,0]
+  recent_interface: [0,0,0],
+  total_interface: [0,0,0]
 };
 var packetSet = {};
 var currentInterval = 0;
@@ -64,6 +65,7 @@ var handleMessage = function (message) {
 
   if(finished_packet != undefined) {
     addToPacketCounts(packetSet, finished_packet, 1);
+    stats.total_interface[this.interface_no]++;
     stats.recent_interface[this.interface_no]++;
     stats.recentRequests++;
     stats.totalRequests++;
