@@ -53,7 +53,13 @@ var handleMessage = function (message) {
       cargo.push(msg);
     });
   }
+  try {
   var finished_packet = interpretMessage(message);
+  }
+  catch(e) {
+    var errString = "Error Occurred: " + e + ", message: " + message ;
+  }
+  
   if(finished_packet != undefined) {
     addToPacketCounts(packetSet, finished_packet, 1);
     stats.recent_interface[this.interface_no]++;
