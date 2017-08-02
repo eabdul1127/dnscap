@@ -53,19 +53,20 @@ var handleMessage = function (message) {
       cargo.push(msg);
     });
   }
+  var finished_packet;
   try {
-  var finished_packet = interpretMessage(message);
+    finished_packet = interpretMessage(message);
   }
   catch(e) {
     var errString = "Error Occurred: " + e + ", message: " + message ;
   }
-  
+
   if(finished_packet != undefined) {
     addToPacketCounts(packetSet, finished_packet, 1);
     stats.recent_interface[this.interface_no]++;
     stats.recentRequests++;
     stats.totalRequests++;
-  }    
+  }
 };
 
 var elasticsearch_packet = function (host, status, origin, ips) {
