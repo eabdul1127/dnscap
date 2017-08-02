@@ -8,6 +8,9 @@ cd nginx-1.12.1/
 make -j 4
 make install
 echo "$0: update dns decode"
-mv ./dns.js ./node_modules/decode/dns.js -f
-echo "$0: Please run \"htpasswd /etc/nginx/.htpasswd USERNAME_HERE\" to create login credentials for the
-web interface and restart nginx"
+mv ./dns.js ./node_modules/pcap/decode/dns.js
+echo "update nginx.conf"
+mv ./nginx.conf /home/nginx/conf/nginx.conf
+pm2 startup
+pm2 start /home/dnscap/host.js --watch -- 5001 5002 5003
+pm2 save
