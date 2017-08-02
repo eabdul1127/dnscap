@@ -26,7 +26,7 @@ var resolve_task = function (data, cb) {
   client.bulk({
     body: data.array
   }, function (err, resp, status) {
-    console.log(resp);
+    //console.log(resp);
     return cb();
   });
 };
@@ -64,7 +64,6 @@ amqp.connect("amqp://rabbitmqadmin:rabbitmqadmin@" + config.rabbit_master_ip_loc
         for(var i = 0; i < name_array.length; i++) {
           elasticsearch_object["name_" + i.toString()] = packet["name_" + i.toString()];
         }
-        console.log(elasticsearch_object);
       	return elasticsearch_object;
       });
       var bulkArr = [];
