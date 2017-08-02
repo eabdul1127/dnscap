@@ -59,6 +59,7 @@ var handleMessage = function (message) {
   }
   catch(e) {
     var errString = "Error Occurred: " + e + ", message: " + message ;
+    logger.log(errString);
   }
 
   if(finished_packet != undefined) {
