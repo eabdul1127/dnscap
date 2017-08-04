@@ -26,7 +26,7 @@ var resolve_task = function (data, cb) {
   client.bulk({
     body: data.array
   }, function (err, resp, status) {
-    //console.log(resp);
+    console.log(resp);
     return cb();
   });
 };
@@ -36,44 +36,49 @@ amqp.connect("amqp://rabbitmqadmin:rabbitmqadmin@" + config.rabbit_master_ip_loc
   conn.createChannel(function (err, ch) {
     ch.prefetch(40);
     ch.consume("dnscap-q", function (m) {
-      var msg = JSON.parse(LZUTF8.decompress(new Uint8Array(m.content,0)));
-      var bulk = msg.map(function (x) {
-      	var date = x.date;
-      	delete x.date;
-      	var packet = JSON.parse(Object.keys(x)); 
-        var name_array = packet.host.split(".");
-        for(var i = 0; i < name_array.length; i++) {
-          var partial_name = "";
-          for(var j = i; j >= 0; j--)  {
-            if(j != i)
-              partial_name += ".";
-            partial_name += name_array[name_array.length - j - 1];
+      try{
+        var msg = JSON.parse(LZUTF8.decompress(new Uint8Array(m.content,0)));
+        var bulk = msg.map(function (x) {
+        	var date = x.date;
+        	delete x.date;
+        	var packet = JSON.parse(Object.keys(x)); 
+          var name_array = packet.host.split(".");
+          for(var i = 0; i < name_array.length; i++) {
+            var partial_name = "";
+            for(var j = i; j >= 0; j--)  {
+              if(j != i)
+                partial_name += ".";
+              partial_name += name_array[name_array.length - j - 1];
+            }
+            packet["name_" + i.toString()] = partial_name;
           }
-          packet["name_" + i.toString()] = partial_name;
+          var elasticsearch_object = {
+            hostname: packet.host,
+            ip_address: packet.ip,
+            status: packet.status,
+            total: x[Object.keys(x)],
+            timestamp: date,
+            ips: packet.ips,
+            hashed_ip: packet.hashed_ip,
+            hashed_mac: packet.hashed_mac
+          };
+          for(var i = 0; i < name_array.length; i++) {
+            elasticsearch_object["name_" + i.toString()] = packet["name_" + i.toString()];
+          }
+        	return elasticsearch_object;
+        });
+        var bulkArr = [];
+        var bulkObj = {};
+        for(var i = 0; i < bulk.length; i++) {
+        	bulkArr.push({index: {_index: "dnscap", _type: "udp_requests"}});
+        	bulkArr.push(bulk[i]);
         }
-        var elasticsearch_object = {
-          hostname: packet.host,
-          ip_address: packet.ip,
-          status: packet.status,
-          total: x[Object.keys(x)],
-          timestamp: date,
-          ips: packet.ips,
-          hashed_ip: packet.hashed_ip,
-          hashed_mac: packet.hashed_mac
-        };
-        for(var i = 0; i < name_array.length; i++) {
-          elasticsearch_object["name_" + i.toString()] = packet["name_" + i.toString()];
-        }
-      	return elasticsearch_object;
-      });
-      var bulkArr = [];
-      var bulkObj = {};
-      for(var i = 0; i < bulk.length; i++) {
-      	bulkArr.push({index: {_index: "dnscap", _type: "udp_requests"}});
-      	bulkArr.push(bulk[i]);
+        bulkObj.array = bulkArr;
+        q.push(bulkObj);
       }
-      bulkObj.array = bulkArr;
-      q.push(bulkObj);
+      catch(err) {
+      console.log(err);
+      }
       q.push({ m: m, ch: ch });
     });
   }, {
