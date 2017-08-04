@@ -12,8 +12,10 @@
     "ain2": "^2.0.0",
     "amqplib": "^0.5.1",
     "async": "^2.5.0",
+    "dns-suite": "https://git@git.daplie.com:Daplie/dns-suite#v1",
     "express": "^4.15.3",
-     "lzutf8": "^0.4.4",
+    "lzutf8": "^0.4.4",
+    "memoizee": "^0.4.5",
     "pcap": "git+https://github.com/node-pcap/node_pcap.git",
     "zeromq": "^4.5.0"
   }
