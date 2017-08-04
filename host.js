@@ -1,12 +1,14 @@
 var path = require("path");
 var zmq = require("zeromq");
-var DNS = require("./node_modules/pcap/decode/dns.js"); // Local Copy of nodejs pcap modified for dns packet decoding to work properly
+var DNS = require("dns-suite").DNSPacket; // Local Copy of nodejs pcap modified for dns packet decoding to work properly
 var express = require("express");
 var os = require("os");
 var amqp = require("amqplib/callback_api");
 var async = require("async");
 var config = require("./config.js");
 var LZUTF8 = require('lzutf8');
+var memoize = require("memoizee"),
+    memoized = memoize(DNS.parse, { maxAge: 1000*60*60*24 }); // 24 hours
 var SysLogger = require("ain2"),
     logger = new SysLogger();
 
@@ -69,7 +71,7 @@ var handleMessage = function (message) {
     stats.recent_interface[this.interface_no]++;
     stats.recentRequests++;
     stats.totalRequests++;
-  }
+    }
 };
 
 var elasticsearch_packet = function (host, status, origin, ips) {
@@ -85,11 +87,10 @@ var elasticsearch_packet = function (host, status, origin, ips) {
 var interpretMessage = function (message) {
   var parsedMessage = JSON.parse(message.toString());
   var buffer = new Buffer(parsedMessage.packetData);
-  var decodedPacket = new DNS().decode(buffer, 0);
+  var decodedPacket = memoized(buffer);
   var ips = [];
-  try {
-      answer_rrs = decodedPacket.answer.rrs;
-      question_rrs = decodedPacket.question.rrs;
+      answer_rrs = decodedPacket.answer;
+      question_rrs = decodedPacket.question;
       var packetStatus;
       var properResponse = false;
       if(decodedPacket.ancount > 0) {
@@ -102,17 +103,12 @@ var interpretMessage = function (message) {
           return;
       }
       for(var i = 0; i < answer_rrs.length; i++) {
-        if(answer_rrs[i].rdata != null) {
-          ips.push(answer_rrs[i].rdata.addr.join("."));
+        if(answer_rrs[i].type == 1) {
+          ips.push(answer_rrs[i].address);
         }
       }
-    packetStatus = responseToString(decodedPacket.header.responseCode);
-    return new elasticsearch_packet(decodedPacket.question.rrs[0].name, packetStatus, parsedMessage,  ips);
-  } catch(err) {
-    errCount++;
-    logger.error(err);
-    return undefined;
-  }
+    packetStatus = responseToString(decodedPacket.header.rcode);
+    return new elasticsearch_packet(decodedPacket.question.name, packetStatus, parsedMessage,  ips);
 }
 
 var addToPacketCounts = function (packetCounts, nextPacket, value) {
@@ -139,21 +135,25 @@ var responseToString = function (responseCode) {
 };
 
 var cargo = async.cargo(function (data, cb) {
-  connectionChannel.sendToQueue("dnscap-q", new Buffer.from(LZUTF8.compress(JSON.stringify(data))));
+  try{
+    amqp.connect("amqp://rabbitmqadmin:rabbitmqadmin@" + config.rabbit_master_ip, function (err, conn) {
+      conn.createChannel(function (err, ch) {
+        ch.sendToQueue("dnscap-q", new Buffer.from(LZUTF8.compress(JSON.stringify(data))));
+      });
+    });
+  }
+  catch(err) {
+    logger.log("Failed to connect to rabbitmq, attempting to reconnect at next interval");
+  }
    return cb();
 }, config.CARGO_ASYNC);
 
-amqp.connect("amqp://rabbitmqadmin:rabbitmqadmin@" + config.rabbit_master_ip_local, function (err, conn) {
-  conn.createChannel(function (err, ch) {
-    connectionChannel = ch;
-  });
-});
 
-var sock = [];
+var sock;
 var enpoint = "tcp://127.0.0.1:";
 for(var i = 0; i < 3; i++) {
-  sock[i] = zmq.socket("pull");
-  sock[i].interface_no = i;
-  sock[i].bind(enpoint + process.argv[i+2]);
-  sock[i].on("message", handleMessage);
+  sock = zmq.socket("pull");
+  sock.interface_no = i;
+  sock.bind(enpoint + process.argv[i+2]);
+  sock.on("message", handleMessage);
 }
