@@ -90,9 +90,10 @@
             }
           } else {
             chart.data.datasets[0].data.push(resp.recentRequests)
-            for (var i = 0; i < 3; i++)
+            for (var i = 0; i < 3; i++) {
               chart.data.datasets[i + 1].data.push(resp.recent_interface[i]);
               $('#interface_' + (i+1).toString()).text(resp.total_interface[i]);
+            }
           }
           chart.update();
         }
