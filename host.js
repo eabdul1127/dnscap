@@ -7,8 +7,6 @@ var amqp = require("amqplib/callback_api");
 var async = require("async");
 var config = require("./config.js");
 var LZUTF8 = require('lzutf8');
-var memoize = require("memoizee"),
-    memoized = memoize(DNS.parse, { maxAge: 1000*60*60*24 }); // 24 hours
 var SysLogger = require("ain2"),
     logger = new SysLogger();
 
@@ -66,6 +64,7 @@ var handleMessage = function (message) {
   }
 
   if(finished_packet != undefined) {
+    //console.log(finished_packet);
     addToPacketCounts(packetSet, finished_packet, 1);
     stats.total_interface[this.interface_no]++;
     stats.recent_interface[this.interface_no]++;
@@ -87,13 +86,13 @@ var elasticsearch_packet = function (host, status, origin, ips) {
 var interpretMessage = function (message) {
   var parsedMessage = JSON.parse(message.toString());
   var buffer = new Buffer(parsedMessage.packetData);
-  var decodedPacket = memoized(buffer);
+  var decodedPacket = DNS.parse(buffer);
   var ips = [];
       answer_rrs = decodedPacket.answer;
       question_rrs = decodedPacket.question;
       var packetStatus;
       var properResponse = false;
-      if(decodedPacket.ancount > 0) {
+      if(answer_rrs.length > 0) {
         properResponse = answer_rrs.some(function (element, index, array) {
           return element.type == 1;
         });
@@ -108,7 +107,7 @@ var interpretMessage = function (message) {
         }
       }
     packetStatus = responseToString(decodedPacket.header.rcode);
-    return new elasticsearch_packet(decodedPacket.question.name, packetStatus, parsedMessage,  ips);
+    return new elasticsearch_packet(question_rrs[0].name, packetStatus, parsedMessage,  ips);
 }
 
 var addToPacketCounts = function (packetCounts, nextPacket, value) {
@@ -136,18 +135,18 @@ var responseToString = function (responseCode) {
 
 var cargo = async.cargo(function (data, cb) {
   try{
-    amqp.connect("amqp://rabbitmqadmin:rabbitmqadmin@" + config.rabbit_master_ip, function (err, conn) {
-      conn.createChannel(function (err, ch) {
-        ch.sendToQueue("dnscap-q", new Buffer.from(LZUTF8.compress(JSON.stringify(data))));
-      });
-    });
+    connectionChannel.sendToQueue("dnscap-q", new Buffer.from(LZUTF8.compress(JSON.stringify(data))));
   }
   catch(err) {
     logger.log("Failed to connect to rabbitmq, attempting to reconnect at next interval");
   }
    return cb();
 }, config.CARGO_ASYNC);
-
+amqp.connect("amqp://rabbitmqadmin:rabbitmqadmin@" + config.rabbit_master_ip, function (err, conn) {
+  conn.createChannel(function (err, ch) {
+    connectionChannel = ch;
+  });
+});
 
 var sock;
 var enpoint = "tcp://127.0.0.1:";
