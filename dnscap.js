@@ -7,6 +7,8 @@ var amqp = require("amqplib/callback_api");
 var async = require("async");
 var config = require("./config.js");
 var LZUTF8 = require('lzutf8');
+var memoize = require("memoizee"),
+    memoized = memoize(DNS.parse, { maxAge: 1000*60*60}); // 1 hour
 var SysLogger = require("ain2"),
     logger = new SysLogger();
 
@@ -64,7 +66,6 @@ var handleMessage = function (message) {
   }
 
   if(finished_packet != undefined) {
-    //console.log(finished_packet);
     addToPacketCounts(packetSet, finished_packet, 1);
     stats.total_interface[this.interface_no]++;
     stats.recent_interface[this.interface_no]++;
