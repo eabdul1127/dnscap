@@ -15,6 +15,6 @@ make install
 echo "update nginx.conf"
 mv $HOME/dnscap/nginx.conf $HOME/nginx/conf/nginx.conf
 pm2 startup
-pm2 start /$HOME/dnscap/dnscap.js --watch -- 5001 5002 5003
+pm2 start /$HOME/dnscap/dnscap.js --watch -- 5002 5003 5004
 pm2 save
 echo "Run './node_modules/htpasswd/bin/htpasswd -c $HOME/dnscap/.htpasswd USER_NAME' to setup authentication credentials, then start nginx"

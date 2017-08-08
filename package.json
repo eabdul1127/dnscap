@@ -16,7 +16,6 @@
     "express": "^4.15.3",
     "htpasswd": "^2.4.0",
     "lzutf8": "^0.4.4",
-    "memoizee": "^0.4.5",
     "pcap": "git+https://github.com/node-pcap/node_pcap.git",
     "zeromq": "^4.5.0"
   }

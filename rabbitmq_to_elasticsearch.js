@@ -62,8 +62,9 @@ amqp.connect("amqp://rabbitmqadmin:rabbitmqadmin@" + config.rabbit_master_ip_loc
             hashed_ip: packet.hashed_ip,
             hashed_mac: packet.hashed_mac
           };
-          for(var i = 0; i < name_array.length; i++) {
-            elasticsearch_object["name_" + i.toString()] = packet["name_" + i.toString()];
+          for(var i = 0; i < 3; i++) {
+            if(elasticsearch_object["name_" + i.toString()] != undefined)
+              elasticsearch_object["name_" + i.toString()] = packet["name_" + i.toString()];
           }
         	return elasticsearch_object;
         });
