@@ -9,7 +9,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "ain2": "^2.0.0",
     "amqplib": "^0.5.1",
     "async": "^2.5.0",
     "dns-suite": "^1.1.2",
