@@ -54,8 +54,7 @@ amqp.connect(config.rabbit_master_ip_local, function (err, conn) {
           }
         	return elasticsearch_object;
         });
-        var bulkObj = {};
-        bulkObj.array = [];
+        var bulkObj = {array: []};
         for(var i = 0; i < bulk.length; i++) {
           bulkObj.array.push({
             index: {
