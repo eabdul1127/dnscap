@@ -52,7 +52,7 @@ amqp.connect(config.rabbit_master_ip_local, function (err, conn) {
             if(packet["name_" + i.toString()] != undefined)
               elasticsearch_object["name_" + i.toString()] = packet["name_" + i.toString()];
           }
-        	return elasticsearch_object;
+          return elasticsearch_object;
         });
         var bulkObj = {array: []};
         for(var i = 0; i < bulk.length; i++) {
