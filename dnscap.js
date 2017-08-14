@@ -40,8 +40,6 @@ app.get("/update", function (req, res) {
 });
 
 app.get("/setup", function (req, res) {
-  for(var i = 0; i < process.argv.length-2; i++)
-    stats.total_interface[i] = 0;
   res.json(stats);
 });
 
