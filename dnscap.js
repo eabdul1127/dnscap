@@ -30,7 +30,6 @@ app.get("/update", function (req, res) {
   if(first) {
     first = false;
     stats.recentRequests = 0;
-    stats.totalRequests = 0;
   }
   stats.cpuUsage = (os.loadavg()[0]) / os.cpus().length;
   stats.freeMemory = os.freemem();
@@ -133,7 +132,6 @@ var handleMessage = function (message) {
       stats.totalFailedRequests++;
     var errString = "Error Occurred: " + e + ", message: " + message ;
     console.error(errString);
-    console.log(e.name);
   }
   stats.totalRequests++;
   stats.total_interface[this.interface_no]++;
