@@ -1,6 +1,6 @@
 const rabbit_master_ip = 'amqp://rabbitmqadmin:rabbitmqadmin@130.245.169.67';
 const rabbit_master_ip_local = 'amqp://rabbitmqadmin:rabbitmqadmin@192.168.0.26';
-const intervalTimer = 60000;
+const intervalTimer = 600000;
 const CARGO_ASYNC = 100;
 const QUEUE_ASYNC = 100;
 const interfaces = ['eno1', 'eno2', 'eno3'];
