@@ -6,18 +6,12 @@
 </head>
 
 <body>
-    <div>
+    <div id="interfaces">
         <p>Total Requests: <span id="total_requests"></span>
             <br> Total Failed Requests: <span id="total_failed"></span>
             <br> Recent Requests: <span id="recent_requests"></span>
             <br> CPU Usage: <span id="cpu_usage"></span>
             <br> Free Memory: <span id="free_mem"></span>
-            <br> Interface 1: <span id="interface_1"></span>
-            <br> Interface 2: <span id="interface_2"></span>
-            <br> Interface 3: <span id="interface_3"></span>
-
-            <br>
-        </p>
     </div>
     <div style="height: 20%;width: 40%">
         <canvas id="myChart"></canvas>
@@ -44,21 +38,6 @@
                         data: [],
                         borderColor: "#3e95cd",
                         fill: false
-                    }, {
-                        label: "Interface 1",
-                        data: [],
-                        borderColor: "#8e5ea2",
-                        fill: false
-                    }, {
-                        label: "Interface 2",
-                        data: [],
-                        borderColor: "#3cba9f",
-                        fill: false
-                    }, {
-                        label: "Interface 3",
-                        data: [],
-                        borderColor: "#c45850",
-                        fill: false
                     }]
                 },
 
@@ -73,9 +52,40 @@
                     }
                 }
             });
+            setupGraph();
             setInterval(update, timer);
         });
-
+        var setupGraph = function() {
+            $.ajax({
+                url: '/setup',
+                method: 'get',
+                dataType: 'json',
+                success: function(resp) {
+                    if (resp) {
+                        for (var i = 0; i < resp.interface_count; i++) {
+                          $('#interfaces').append("<br> Interface " + (i+1).toString() + ": <span id=\"interface_" + (i+1).toString() +"\"></span>");
+                          chart.data.datasets.push({
+                            label: "Interface " + (i+1).toString(),
+                            data: [],
+                            borderColor: getRandomColor(),
+                            fill: false
+                          });
+                        }
+                        $('#interfaces').append("</p>");
+                        $('#interfaces').append("<br>");
+                        chart.update()
+                    }
+                }
+            });
+        };
+        var getRandomColor = function () {
+          var letters = '0123456789ABCDEF';
+          var color = '#';
+          for (var i = 0; i < 6; i++) {
+            color += letters[Math.floor(Math.random() * 16)];
+          }
+          return color;
+        }
         var update = function() {
             $.ajax({
                 url: '/update',
@@ -85,20 +95,20 @@
                     if (resp) {
                         $('#recent_requests').text(resp.recentRequests);
                         $('#total_requests').text(resp.totalRequests);
-                        $('total_failed').text(resp.totalFailedRequests);
+                        $('#total_failed').text(resp.totalFailedRequests);
                         $('#cpu_usage').text((resp.cpuUsage * 100) + '%');
                         $('#free_mem').text(resp.freeMemory);
                         if (chart.data.datasets[0].data.length >= 20) {
                             chart.data.datasets[0].data.shift();
                             chart.data.datasets[0].data.push(resp.recentRequests);
-                            for (var i = 0; i < 3; i++) {
+                            for (var i = 0; i < resp.interface_count; i++) {
                                 $('#interface_' + (i + 1).toString()).text(resp.total_interface[i]);
                                 chart.data.datasets[i + 1].data.shift();
                                 chart.data.datasets[i + 1].data.push(resp.recent_interface[i]);
                             }
                         } else {
                             chart.data.datasets[0].data.push(resp.recentRequests)
-                            for (var i = 0; i < 3; i++) {
+                            for (var i = 0; i < resp.interface_count; i++) {
                                 $('#interface_' + (i + 1).toString()).text(resp.total_interface[i]);
                                 chart.data.datasets[i + 1].data.push(resp.recent_interface[i]);
                             }
