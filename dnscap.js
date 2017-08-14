@@ -31,9 +31,6 @@ app.get("/update", function (req, res) {
     first = false;
     stats.recentRequests = 0;
     stats.totalRequests = 0;
-    for(var i = 0; i < process.argv.length-2; i++) {
-      stats.total_interface[i] = 0;  
-    }
   }
   stats.cpuUsage = (os.loadavg()[0]) / os.cpus().length;
   stats.freeMemory = os.freemem();
@@ -132,9 +129,11 @@ var handleMessage = function (message) {
     stats.recent_interface[this.interface_no]++;
     stats.recentRequests++;
   } catch(e) {
-    stats.totalFailedRequests++;
+    if(e.message != "Failed to decode message")
+      stats.totalFailedRequests++;
     var errString = "Error Occurred: " + e + ", message: " + message ;
     console.error(errString);
+    console.log(e.name);
   }
   stats.totalRequests++;
   stats.total_interface[this.interface_no]++;
