@@ -16,22 +16,36 @@ var stats = {
   freeMemory: 0,
   recent_interface: [],
   total_interface: [],
-  errCount: 0
+  interface_count: process.argv.length-2,
 };
 var packetSet = {};
 var app = express();
+
+for(var i = 0; i < process.argv.length-2; i++)
+  stats.total_interface[i] = 0;
 
 app.get("/", function (req, res) {
   res.sendFile(path.join(__dirname + "/graph.html"));
 });
 
+var first = true;
 app.get("/update", function (req, res) {
+  if(first) {
+    first = false;
+    stats.recentRequests = 0;
+    stats.totalRequests = 0;
+  }
   stats.cpuUsage = (os.loadavg()[0]) / os.cpus().length;
   stats.freeMemory = os.freemem();
   res.json(stats);
   stats.recentRequests = 0;
   for(var i = 0; i < process.argv.length-2; i++)
     stats.recent_interface[i] = 0;
+});
+
+
+app.get("/setup", function (req, res) {
+  res.json(stats);
 });
 
 app.listen(3000, "localhost", function () {
@@ -64,7 +78,7 @@ var responseToString = function (responseCode) {
       5: "REFUSED ERR"
     }[responseCode];
   } catch(err) {
-    errCount++;
+    stats.totalFailedRequests++;
     console.error("Unable to determine response code for " + responseCode)
     return "CODE " + responseCode;
   }
@@ -94,6 +108,7 @@ var interpretMessage = function (message) {
   ips = ips.filter(function (ip) {
     return ip != undefined;
   })
+
   return new filtered_packet(question_rrs[0].name, packetStatus, parsedMessage,  ips);
 }
 
@@ -119,9 +134,11 @@ var handleMessage = function (message) {
     stats.recent_interface[this.interface_no]++;
     stats.recentRequests++;
   } catch(e) {
-    stats.totalFailedRequests++;
+    if(e.message != "Failed to decode message")
+      stats.totalFailedRequests++;
     var errString = "Error Occurred: " + e + ", message: " + message ;
     console.error(errString);
+    console.log(e.name);
   }
   stats.totalRequests++;
   stats.total_interface[this.interface_no]++;
