@@ -138,7 +138,6 @@ var handleMessage = function (message) {
       stats.totalFailedRequests++;
     var errString = "Error Occurred: " + e + ", message: " + message ;
     console.error(errString);
-    console.log(e.name);
   }
   stats.totalRequests++;
   stats.total_interface[this.interface_no]++;
@@ -155,7 +154,7 @@ var cargo = async.cargo(function (data, cb) {
   try{
     connectionChannel.sendToQueue("dnscap-q", new Buffer.from(LZUTF8.compress(JSON.stringify(data))));
   } catch(err) {
-    console.error("Failed to connect to rabbitmq, attempting to reconnect at next interval");
+    console.error("Failed to connect to rabbitmq");
   }
   return cb();
 }, config.CARGO_ASYNC);
