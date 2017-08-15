@@ -4,7 +4,7 @@ const intervalTimer = 600000;
 const CARGO_ASYNC = 100;
 const QUEUE_ASYNC = 100;
 const interfaces = ['eno1', 'eno2', 'eno3'];
-const index_setting = "dnscap";
+const index_setting = "dnscap-new";
 const type_setting = "udp_requests"
 const hosts = [
   "192.168.0.205:9200", "192.168.0.206:9200", "192.168.0.208:9200",
