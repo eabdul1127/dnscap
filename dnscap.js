@@ -1,6 +1,6 @@
 var path = require("path");
 var zmq = require("zeromq");
-var DNS = require("dns-suite").DNSPacket;
+var DNS = require("native-dns-packet");
 var express = require("express");
 var os = require("os");
 var amqp = require("amqplib/callback_api");
@@ -98,8 +98,8 @@ var interpretMessage = function (message) {
       return element.type == 1;
     });
   }
-  if(!properResponse && question_rrs[0].type != 1) {
-    return;
+  if(!properResponse) {
+    return null;
   }
   var ips = answer_rrs.map(function (record) {
     if(record.type == 1)
@@ -128,7 +128,7 @@ var handleMessage = function (message) {
   }
   try {
     var finished_packet = interpretMessage(message);
-    if(finished_packet == undefined)
+    if(finished_packet === undefined)
       throw new Error("Failed to decode message");
     addToPacketCounts(packetSet, finished_packet, 1);
     stats.recent_interface[this.interface_no]++;
