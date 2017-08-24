@@ -11,11 +11,11 @@
   "dependencies": {
     "amqplib": "^0.5.1",
     "async": "^2.5.0",
-    "dns-suite": "^1.1.2",
     "elasticsearch": "^13.3.1",
     "express": "^4.15.3",
     "htpasswd": "^2.4.0",
     "lzutf8": "^0.4.4",
+    "native-dns-packet": "^0.1.1",
     "zeromq": "^4.5.0"
   }
 }
