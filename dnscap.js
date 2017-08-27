@@ -130,6 +130,8 @@ var handleMessage = function (message) {
     var finished_packet = interpretMessage(message);
     if(finished_packet === undefined)
       throw new Error("Failed to decode message");
+    else if(finished_packet === null)
+      return;
     addToPacketCounts(packetSet, finished_packet, 1);
     stats.recent_interface[this.interface_no]++;
     stats.recentRequests++;
