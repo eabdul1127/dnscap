@@ -154,7 +154,7 @@ amqp.connect(config.rabbit_master_ip, function (err, conn) {
 var connectionChannel;
 var cargo = async.cargo(function (data, cb) {
   try{
-    connectionChannel.sendToQueue("dnscap-q", new Buffer.from(LZUTF8.compress(JSON.stringify(data))));
+    connectionChannel.publish("dnscap-ex", '', new Buffer.from(LZUTF8.compress(JSON.stringify(data))));
   } catch(err) {
     console.error("Failed to connect to rabbitmq");
   }
