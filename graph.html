@@ -78,6 +78,11 @@
                 }
             });
         };
+        $.ajax({
+            url: '/update',
+            method: 'get',
+            dataType: 'json',
+          });
         var getRandomColor = function () {
           var letters = '0123456789ABCDEF';
           var color = '#';
