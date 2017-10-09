@@ -1,6 +1,6 @@
 var path = require("path");
 var zmq = require("zeromq");
-var DNS = require("dns-suite").DNSPacket;
+var DNS = require("native-dns-packet");
 var express = require("express");
 var os = require("os");
 var amqp = require("amqplib/callback_api");
@@ -99,12 +99,15 @@ var interpretMessage = function (message) {
     });
   }
   if(!properResponse) {
-    return;
+    return null;
   }
   var ips = answer_rrs.map(function (record) {
     if(record.type == 1)
       return record.address;
   });
+  ips = ips.filter(function (ip) {
+    return ip != undefined;
+  })
 
   return new filtered_packet(question_rrs[0].name, packetStatus, parsedMessage,  ips);
 }
@@ -125,8 +128,10 @@ var handleMessage = function (message) {
   }
   try {
     var finished_packet = interpretMessage(message);
-    if(finished_packet == undefined)
+    if(finished_packet === undefined)
       throw new Error("Failed to decode message");
+    else if(finished_packet === null)
+      return;
     addToPacketCounts(packetSet, finished_packet, 1);
     stats.recent_interface[this.interface_no]++;
     stats.recentRequests++;
@@ -135,7 +140,6 @@ var handleMessage = function (message) {
       stats.totalFailedRequests++;
     var errString = "Error Occurred: " + e + ", message: " + message ;
     console.error(errString);
-    console.log(e.name);
   }
   stats.totalRequests++;
   stats.total_interface[this.interface_no]++;
@@ -150,9 +154,9 @@ amqp.connect(config.rabbit_master_ip, function (err, conn) {
 var connectionChannel;
 var cargo = async.cargo(function (data, cb) {
   try{
-    connectionChannel.sendToQueue("dnscap-q", new Buffer.from(LZUTF8.compress(JSON.stringify(data))));
+    connectionChannel.publish("dnscap-ex", '', new Buffer.from(LZUTF8.compress(JSON.stringify(data))));
   } catch(err) {
-    console.error("Failed to connect to rabbitmq, attempting to reconnect at next interval");
+    console.error("Failed to connect to rabbitmq");
   }
   return cb();
 }, config.CARGO_ASYNC);
