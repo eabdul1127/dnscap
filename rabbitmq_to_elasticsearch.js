@@ -12,7 +12,8 @@ var index_requests = function (data, cb) {
   client.bulk({
     body: data.array
   }, function (err, resp, status) {
-    console.log(resp);
+    if(err)
+      console.log(err);
     return cb();
   });
 };
